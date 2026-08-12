@@ -1,20 +1,39 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
-export default function AtendimentoCard({ atendimento, onPress, onDelete }) {
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
+
+export default function AtendimentoCard({
+  atendimento,
+  onPress,
+  onDelete,
+}) {
   return (
     <View style={styles.card}>
+
       <TouchableOpacity
-        style={styles.cardContent}
+        style={styles.conteudo}
         onPress={onPress}
-        activeOpacity={0.7}
+        activeOpacity={0.8}
       >
+
         <View style={styles.iconContainer}>
-          <Text style={styles.icon}>🩺</Text>
+          <Text style={styles.icon}>
+            {atendimento.tipo === 'Consulta'
+              ? '📅'
+              : '🩺'}
+          </Text>
         </View>
 
-        <View style={styles.info}>
-          <Text style={styles.tipo}>{atendimento.tipo}</Text>
+        <View style={styles.informacoes}>
+
+          <Text style={styles.tipo}>
+            {atendimento.tipo}
+          </Text>
 
           <Text style={styles.data}>
             {atendimento.data} • {atendimento.horario}
@@ -25,106 +44,129 @@ export default function AtendimentoCard({ atendimento, onPress, onDelete }) {
           </Text>
 
           <View style={styles.statusContainer}>
-            <Text style={styles.status}>{atendimento.status}</Text>
+            <Text style={styles.status}>
+              {atendimento.status}
+            </Text>
           </View>
+
         </View>
 
-        <Text style={styles.arrow}>›</Text>
+        <Text style={styles.seta}>
+          ›
+        </Text>
+
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.deleteButton}
+        style={styles.excluir}
         onPress={onDelete}
       >
-        <Text style={styles.deleteText}>Excluir</Text>
+        <Text style={styles.excluirTexto}>
+          Excluir
+        </Text>
       </TouchableOpacity>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#E0DDE0',
+    borderRadius: 16,
+    marginBottom: 12,
+
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+
     overflow: 'hidden',
   },
 
-  cardContent: {
+  conteudo: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 18,
+    padding: 15,
   },
 
   iconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#F7E5F2',
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#E8F4FF',
+
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+
+    marginRight: 13,
   },
 
   icon: {
-    fontSize: 25,
+    fontSize: 23,
   },
 
-  info: {
+  informacoes: {
     flex: 1,
   },
 
   tipo: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#202020',
-    marginBottom: 5,
-  },
-
-  data: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#8B008B',
     marginBottom: 4,
   },
 
+  data: {
+    fontSize: 12,
+    color: '#161515',
+    marginBottom: 3,
+  },
+
   profissional: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 12,
+    color: '#161515',
   },
 
   statusContainer: {
     alignSelf: 'flex-start',
-    backgroundColor: '#F7E5F2',
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginTop: 8,
+    backgroundColor: '#E8F4FF',
+    borderRadius: 10,
+
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+
+    marginTop: 6,
   },
 
   status: {
+    fontSize: 11,
+    fontWeight: 'bold',
     color: '#8B008B',
-    fontSize: 12,
-    fontWeight: '600',
   },
 
-  arrow: {
+  seta: {
     fontSize: 30,
     color: '#8B008B',
     marginLeft: 8,
   },
 
-  deleteButton: {
+  excluir: {
     borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-    paddingVertical: 10,
+    borderTopColor: '#EEF1F3',
     alignItems: 'center',
+    paddingVertical: 8,
   },
 
-  deleteText: {
+  excluirTexto: {
     color: '#B00020',
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
   },
+
 });
