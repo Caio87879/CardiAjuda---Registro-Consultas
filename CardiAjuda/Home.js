@@ -43,40 +43,57 @@ export default function Home() {
   // CARREGAR ATENDIMENTOS DO SUPABASE
 
   useEffect(() => {
+    console.log('🔄 Inicializando...');
+    console.log('Supabase URL:', process.env.EXPO_PUBLIC_SUPABASE_URL);
+    console.log('Supabase Key carregada:', !!process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
     carregarAtendimentos();
   }, []);
 
 
   async function carregarAtendimentos() {
 
-    const {
-      data,
-      error,
-    } = await supabase
-      .from('atendimentos')
-      .select('*')
-      .order('created_at', {
-        ascending: false,
-      });
+    try {
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from('atendimentos')
+        .select('*')
+        .order('created_at', {
+          ascending: false,
+        });
 
 
-    if (error) {
+      if (error) {
 
-      console.log(
-        'Erro ao carregar atendimentos:',
-        error
-      );
+        console.error(
+          '❌ Erro ao carregar atendimentos:',
+          error
+        );
+
+        Alert.alert(
+          'Erro de conexão',
+          `Falha ao conectar ao banco de dados:\n${error.message}`
+        );
+
+        return;
+      }
+
+
+      console.log('✅ Atendimentos carregados:', data?.length || 0);
+
+      setAtendimentos(data || []);
+
+    } catch (erro) {
+
+      console.error('❌ Erro inesperado:', erro);
 
       Alert.alert(
         'Erro',
-        'Não foi possível carregar os atendimentos.'
+        'Falha ao carregar os atendimentos.'
       );
-
-      return;
     }
-
-
-    setAtendimentos(data || []);
   }
 
   // ADICIONAR ATENDIMENTO
@@ -85,60 +102,90 @@ export default function Home() {
     novoAtendimento
   ) {
 
-    const {
-      data,
-      error,
-    } = await supabase
-      .from('atendimentos')
-      .insert({
-        tipo: novoAtendimento.tipo,
-        data: novoAtendimento.data,
-        horario: novoAtendimento.horario,
-        profissional: novoAtendimento.profissional,
-        observacoes: novoAtendimento.observacoes,
-        status: novoAtendimento.status,
-      })
-      .select();
+    try {
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from('atendimentos')
+        .insert({
+          tipo: novoAtendimento.tipo,
+          data: novoAtendimento.data,
+          horario: novoAtendimento.horario,
+          profissional: novoAtendimento.profissional,
+          observacoes: novoAtendimento.observacoes,
+          status: novoAtendimento.status,
+        })
+        .select();
 
 
-    if (error) {
+      if (error) {
 
-      console.log(
-        'Erro ao salvar atendimento:',
-        error
-      );
+        console.error(
+          'Erro Supabase:',
+          error.message || error
+        );
+
+        Alert.alert(
+          'Erro ao salvar',
+          error.message || 'Não foi possível salvar o atendimento. Verifique sua conexão.'
+        );
+
+        return;
+      }
+
+
+      if (!data || data.length === 0) {
+
+        console.error('Nenhum dado retornado do Supabase');
+
+        Alert.alert(
+          'Erro',
+          'Falha ao obter os dados salvos.'
+        );
+
+        return;
+      }
+
+
+      // Adiciona o registro retornado
+      // pelo Supabase na lista
+
+      setAtendimentos([
+        data[0],
+        ...atendimentos,
+      ]);
+
+
+      // Volta para a lista
+
+      setTela('atendimentos');
+
 
       Alert.alert(
-        'Erro',
-        'Não foi possível salvar o atendimento.'
+        'Sucesso',
+        'Atendimento registrado com sucesso!'
       );
 
-      return;
+    } catch (erro) {
+
+      console.error('Erro ao salvar atendimento:', erro);
+
+      Alert.alert(
+        'Erro inesperado',
+        'Ocorreu um erro ao salvar. Tente novamente.'
+      );
     }
-
-
-    // Adiciona o registro retornado
-    // pelo Supabase na lista
-
-    setAtendimentos([
-      data[0],
-      ...atendimentos,
-    ]);
-
-
-    // Volta para a lista
-
-    setTela('atendimentos');
-
-
-    Alert.alert(
-      'Sucesso',
-      'Atendimento registrado com sucesso!'
-    );
   }
 
   // EXCLUIR ATENDIMENTO
   function excluirAtendimento(id) {
+
+    console.log('📍 FUNÇÃO EXCLUIR CHAMADA! ID:', id, 'Tipo:', typeof id);
+
+    // Teste básico
+    console.log('✅ Mostrar alerta...');
 
     Alert.alert(
       'Excluir atendimento',
@@ -150,6 +197,7 @@ export default function Home() {
         {
           text: 'Cancelar',
           style: 'cancel',
+          onPress: () => console.log('❌ Cancelado'),
         },
 
         {
@@ -160,43 +208,60 @@ export default function Home() {
 
           onPress: async () => {
 
-            const {
-              error,
-            } = await supabase
-              .from('atendimentos')
-              .delete()
-              .eq('id', id);
+            try {
+
+              console.log('🗑️ Iniciando DELETE para ID:', id);
+
+              const {
+                error,
+              } = await supabase
+                .from('atendimentos')
+                .delete()
+                .eq('id', id);
 
 
-            if (error) {
+              if (error) {
 
-              console.log(
-                'Erro ao excluir:',
-                error
+                console.error(
+                  '❌ ERRO NO SUPABASE:',
+                  error.message || error,
+                  'Code:', error.code
+                );
+
+                Alert.alert(
+                  '❌ ERRO AO EXCLUIR',
+                  `Erro: ${error.message || 'Falha desconhecida'}\n\nDica: Verifique se:\n• Tabela tem coluna "id"\n• RLS permite DELETE\n• Você tem permissão`
+                );
+
+                return;
+              }
+
+
+              console.log('✅ DELETE SUCESSO!');
+
+              // Remove da tela
+
+              setAtendimentos(
+                atendimentos.filter(
+                  item => item.id !== id
+                )
               );
+
 
               Alert.alert(
-                'Erro',
-                'Não foi possível excluir o atendimento.'
+                '✅ SUCESSO',
+                'Atendimento excluído com sucesso!'
               );
 
-              return;
+            } catch (erro) {
+
+              console.error('❌ ERRO INESPERADO:', erro.message, erro);
+
+              Alert.alert(
+                '❌ ERRO INESPERADO',
+                `${erro.message || 'Erro desconhecido'}\n\nVerifique o console.`
+              );
             }
-
-
-            // Remove da tela
-
-            setAtendimentos(
-              atendimentos.filter(
-                item => item.id !== id
-              )
-            );
-
-
-            Alert.alert(
-              'Sucesso',
-              'Atendimento excluído.'
-            );
 
           },
 
@@ -362,11 +427,14 @@ ${atendimento.observacoes || 'Nenhuma'}`
                     )
                   }
 
-                  onDelete={() =>
-                    excluirAtendimento(
-                      atendimento.id
-                    )
-                  }
+          onDelete={() => {
+            console.log('🗑️ Tentando excluir atendimento:', {
+              id: atendimento.id,
+              tipo: atendimento.tipo,
+              data: atendimento.data,
+            });
+            excluirAtendimento(atendimento.id);
+          }}
 
                 />
 
@@ -617,7 +685,7 @@ ${atendimento.observacoes || 'Nenhuma'}`
           .map(
             atendimento => (
 
-              <TouchableOpacity
+              <View
 
                 key={
                   atendimento.id
@@ -627,88 +695,111 @@ ${atendimento.observacoes || 'Nenhuma'}`
                   styles.historyCard
                 }
 
-                onPress={() =>
-                  abrirDetalhes(
-                    atendimento
-                  )
-                }
-
               >
 
-                <View
-                  style={
-                    styles.historyIcon
+                <TouchableOpacity
+
+                  onPress={() =>
+                    abrirDetalhes(
+                      atendimento
+                    )
                   }
+
+                  style={{flex: 1}}
+
                 >
 
-                  <Text>
-
-                    {
-                      atendimento.tipo ===
-                      'Consulta'
-
-                        ? '📅'
-
-                        : '🩺'
+                  <View
+                    style={
+                      styles.historyIcon
                     }
+                  >
 
-                  </Text>
+                    <Text>
 
-                </View>
+                      {
+                        atendimento.tipo ===
+                        'Consulta'
+
+                          ? '📅'
+
+                          : '🩺'
+                      }
+
+                    </Text>
+
+                  </View>
 
 
-                <View
-                  style={
-                    styles.historyContent
-                  }
+                  <View
+                    style={
+                      styles.historyContent
+                    }
+                  >
+
+                    <Text
+                      style={
+                        styles.historyTitle
+                      }
+                    >
+
+                      {
+                        atendimento.tipo
+                      }
+
+                      {' realizado'}
+
+                    </Text>
+
+
+                    <Text
+                      style={
+                        styles.historyDescription
+                      }
+                    >
+
+                      {
+                        atendimento.data
+                      }
+
+                      {' às '}
+
+                      {
+                        atendimento.horario
+                      }
+
+                    </Text>
+
+                  </View>
+
+                </TouchableOpacity>
+
+                <TouchableOpacity
+
+                  onPress={() => {
+                    console.log('🗑️ Excluindo do histórico:', atendimento.id);
+                    excluirAtendimento(atendimento.id);
+                  }}
+
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    justifyContent: 'center',
+                  }}
+
                 >
 
-                  <Text
-                    style={
-                      styles.historyTitle
-                    }
-                  >
-
-                    {
-                      atendimento.tipo
-                    }
-
-                    {' realizado'}
-
+                  <Text style={{color: '#B00020', fontSize: 12, fontWeight: '600'}}>
+                    ✕
                   </Text>
 
+                </TouchableOpacity>
 
-                  <Text
-                    style={
-                      styles.historyDescription
-                    }
-                  >
-
-                    {
-                      atendimento.profissional
-                    }
-
-                  </Text>
-
-
-                  <Text
-                    style={
-                      styles.historyDate
-                    }
-                  >
-
-                    {
-                      atendimento.data
-                    }
-
-                  </Text>
-
-                </View>
-
-              </TouchableOpacity>
+              </View>
 
             )
-          )}
+          )
+        }
 
       </ScrollView>
 

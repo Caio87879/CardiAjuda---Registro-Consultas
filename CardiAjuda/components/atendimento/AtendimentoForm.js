@@ -22,6 +22,9 @@ export default function AtendimentoForm({
 
   function salvar() {
 
+    console.log('Botão salvar clicado');
+    console.log('Campos:', { tipo, data, horario, profissional });
+
     if (
       !tipo ||
       !data ||
@@ -44,6 +47,8 @@ export default function AtendimentoForm({
       observacoes,
       status: 'Agendado',
     };
+
+    console.log('Enviando:', novoAtendimento);
 
     onSave(novoAtendimento);
   }
