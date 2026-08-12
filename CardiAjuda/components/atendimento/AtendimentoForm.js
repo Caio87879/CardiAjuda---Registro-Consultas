@@ -1,190 +1,214 @@
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import React, { useState } from 'react';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Droplet, User, Stethoscope, Calendar, FileText, X } from "lucide-react";
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
 
-export default function AtendimentoForm({ onSubmit, onCancel, initialData }) {
-  const [form, setForm] = useState({
-    paciente_nome: initialData?.paciente_nome || "",
-    data_consulta: initialData?.data_consulta || new Date().toISOString().slice(0, 10),
-    tipo: initialData?.tipo || "Consulta",
-    profissional: initialData?.profissional || "",
-    pressao_sistolica: initialData?.pressao_sistolica ?? "",
-    pressao_diastolica: initialData?.pressao_diastolica ?? "",
-    glicemia: initialData?.glicemia ?? "",
-    observacoes: initialData?.observacoes || "",
-    status: initialData?.status || "Agendada",
-  });
-  const [loading, setLoading] = useState(false);
+export default function AtendimentoForm({ onSave, onCancel }) {
+  const [tipo, setTipo] = useState('');
+  const [data, setData] = useState('');
+  const [horario, setHorario] = useState('');
+  const [profissional, setProfissional] = useState('');
+  const [observacoes, setObservacoes] = useState('');
 
-  const handleChange = (field, value) => setForm((f) => ({ ...f, [field]: value }));
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await onSubmit({
-        ...form,
-        pressao_sistolica: form.pressao_sistolica === "" ? null : Number(form.pressao_sistolica),
-        pressao_diastolica: form.pressao_diastolica === "" ? null : Number(form.pressao_diastolica),
-        glicemia: form.glicemia === "" ? null : Number(form.glicemia),
-      });
-    } finally {
-      setLoading(false);
+  function salvar() {
+    if (!tipo || !data || !horario || !profissional) {
+      alert('Preencha todos os campos obrigatórios.');
+      return;
     }
-  };
 
-  const fieldClass = "grid gap-1.5";
-  const inputIcon = "h-4 w-4 text-muted-foreground";
+    const novoAtendimento = {
+      id: Date.now().toString(),
+      tipo,
+      data,
+      horario,
+      profissional,
+      observacoes,
+      status: 'Agendado',
+    };
+
+    onSave(novoAtendimento);
+  }
 
   return (
-    <Card className="border-none shadow-lg shadow-slate-200/60 ring-1 ring-slate-100">
-      <CardHeader className="bg-gradient-to-r from-rose-50 to-amber-50 rounded-t-xl">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-slate-800">
-            <Stethoscope className="h-5 w-5 text-rose-600" />
-            {initialData ? "Editar Atendimento" : "Novo Atendimento"}
-          </CardTitle>
-          <Button variant="ghost" size="icon" onClick={onCancel} className="h-8 w-8">
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="pt-6 space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className={fieldClass}>
-              <Label className="flex items-center gap-1.5 text-slate-700">
-                <User className={inputIcon} /> Nome do Paciente
-              </Label>
-              <Input
-                required
-                value={form.paciente_nome}
-                onChange={(e) => handleChange("paciente_nome", e.target.value)}
-                placeholder="Nome completo"
-              />
-            </div>
-            <div className={fieldClass}>
-              <Label className="flex items-center gap-1.5 text-slate-700">
-                <Calendar className={inputIcon} /> Data do Atendimento
-              </Label>
-              <Input
-                required
-                type="date"
-                value={form.data_consulta}
-                onChange={(e) => handleChange("data_consulta", e.target.value)}
-              />
-            </div>
-          </div>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className={fieldClass}>
-              <Label className="text-slate-700">Tipo de Atendimento</Label>
-              <Select value={form.tipo} onValueChange={(v) => handleChange("tipo", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Consulta">Consulta</SelectItem>
-                  <SelectItem value="Retorno">Retorno</SelectItem>
-                  <SelectItem value="Emergência">Emergência</SelectItem>
-                  <SelectItem value="Acompanhamento">Acompanhamento</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className={fieldClass}>
-              <Label className="flex items-center gap-1.5 text-slate-700">
-                <Stethoscope className={inputIcon} /> Profissional Responsável
-              </Label>
-              <Input
-                value={form.profissional}
-                onChange={(e) => handleChange("profissional", e.target.value)}
-                placeholder="Dr(a). Nome"
-              />
-            </div>
-          </div>
+      <TouchableOpacity onPress={onCancel}>
+        <Text style={styles.voltar}>‹ Voltar</Text>
+      </TouchableOpacity>
 
-          <div className="rounded-xl bg-slate-50 p-4 space-y-4">
-            <p className="text-sm font-medium text-slate-600 flex items-center gap-1.5">
-              <Activity className="h-4 w-4 text-rose-500" /> Sinais Vitais
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div className={fieldClass}>
-                <Label className="text-slate-700 text-xs">Sistólica (mmHg)</Label>
-                <Input
-                  type="number"
-                  value={form.pressao_sistolica}
-                  onChange={(e) => handleChange("pressao_sistolica", e.target.value)}
-                  placeholder="120"
-                />
-              </div>
-              <div className={fieldClass}>
-                <Label className="text-slate-700 text-xs">Diastólica (mmHg)</Label>
-                <Input
-                  type="number"
-                  value={form.pressao_diastolica}
-                  onChange={(e) => handleChange("pressao_diastolica", e.target.value)}
-                  placeholder="80"
-                />
-              </div>
-              <div className={fieldClass}>
-                <Label className="flex items-center gap-1 text-slate-700 text-xs">
-                  <Droplet className="h-3 w-3 text-amber-600" /> Glicemia (mg/dL)
-                </Label>
-                <Input
-                  type="number"
-                  value={form.glicemia}
-                  onChange={(e) => handleChange("glicemia", e.target.value)}
-                  placeholder="100"
-                />
-              </div>
-            </div>
-          </div>
+      <Text style={styles.titulo}>Novo atendimento</Text>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className={fieldClass}>
-              <Label className="text-slate-700">Status</Label>
-              <Select value={form.status} onValueChange={(v) => handleChange("status", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Agendada">Agendada</SelectItem>
-                  <SelectItem value="Realizada">Realizada</SelectItem>
-                  <SelectItem value="Cancelada">Cancelada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+      <Text style={styles.subtitulo}>
+        Registre uma nova consulta ou acompanhamento
+      </Text>
 
-          <div className={fieldClass}>
-            <Label className="flex items-center gap-1.5 text-slate-700">
-              <FileText className={inputIcon} /> Observações
-            </Label>
-            <Textarea
-              value={form.observacoes}
-              onChange={(e) => handleChange("observacoes", e.target.value)}
-              placeholder="Anotações clínicas, prescrições, orientações..."
-              rows={3}
-            />
-          </div>
+      <Text style={styles.label}>Tipo de atendimento *</Text>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading} className="bg-rose-600 hover:bg-rose-700">
-              {loading ? "Salvando..." : "Salvar Atendimento"}
-            </Button>
-          </div>
-        </CardContent>
-      </form>
-    </Card>
+      <TextInput
+        style={styles.input}
+        placeholder="Ex: Consulta médica"
+        placeholderTextColor="#999"
+        value={tipo}
+        onChangeText={setTipo}
+      />
+
+      <Text style={styles.label}>Data *</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Ex: 20/08/2026"
+        placeholderTextColor="#999"
+        value={data}
+        onChangeText={setData}
+        keyboardType="numbers-and-punctuation"
+      />
+
+      <Text style={styles.label}>Horário *</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Ex: 14:30"
+        placeholderTextColor="#999"
+        value={horario}
+        onChangeText={setHorario}
+        keyboardType="numbers-and-punctuation"
+      />
+
+      <Text style={styles.label}>Profissional *</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Nome do profissional"
+        placeholderTextColor="#999"
+        value={profissional}
+        onChangeText={setProfissional}
+      />
+
+      <Text style={styles.label}>Observações</Text>
+
+      <TextInput
+        style={[styles.input, styles.textArea]}
+        placeholder="Adicione observações sobre o atendimento..."
+        placeholderTextColor="#999"
+        value={observacoes}
+        onChangeText={setObservacoes}
+        multiline
+        numberOfLines={5}
+      />
+
+      <TouchableOpacity
+        style={styles.salvarButton}
+        onPress={salvar}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.salvarText}>
+          Salvar atendimento
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.cancelarButton}
+        onPress={onCancel}
+      >
+        <Text style={styles.cancelarText}>
+          Cancelar
+        </Text>
+      </TouchableOpacity>
+
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F5F7',
+  },
+
+  content: {
+    padding: 24,
+    paddingBottom: 40,
+  },
+
+  voltar: {
+    fontSize: 17,
+    color: '#8B008B',
+    fontWeight: '600',
+    marginBottom: 25,
+  },
+
+  titulo: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#202020',
+    marginBottom: 7,
+  },
+
+  subtitulo: {
+    fontSize: 15,
+    color: '#666666',
+    marginBottom: 30,
+  },
+
+  label: {
+    fontSize: 15,
+    color: '#333333',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+
+  input: {
+    height: 55,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D2D0D2',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#222222',
+    marginBottom: 20,
+  },
+
+  textArea: {
+    height: 120,
+    paddingTop: 15,
+    textAlignVertical: 'top',
+  },
+
+  salvarButton: {
+    height: 56,
+    backgroundColor: '#8B008B',
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+
+  salvarText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '600',
+  },
+
+  cancelarButton: {
+    height: 52,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+
+  cancelarText: {
+    color: '#8B008B',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
