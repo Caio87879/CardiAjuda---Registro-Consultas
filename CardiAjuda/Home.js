@@ -32,246 +32,241 @@ import AtendimentoForm
 
 export default function Home() {
 
-
+  // =====================================
   // ESTADOS
-
+  // =====================================
 
   const [tela, setTela] = useState('home');
 
   const [atendimentos, setAtendimentos] = useState([]);
 
-  // CARREGAR ATENDIMENTOS DO SUPABASE
+
+  // =====================================
+  // CARREGAR ATENDIMENTOS
+  // =====================================
 
   useEffect(() => {
-    console.log('🔄 Inicializando...');
-    console.log('Supabase URL:', process.env.EXPO_PUBLIC_SUPABASE_URL);
-    console.log('Supabase Key carregada:', !!process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
     carregarAtendimentos();
   }, []);
 
 
   async function carregarAtendimentos() {
 
-    try {
+    console.log('📡 Carregando atendimentos...');
 
-      const {
-        data,
-        error,
-      } = await supabase
-        .from('atendimentos')
-        .select('*')
-        .order('created_at', {
-          ascending: false,
-        });
-
-
-      if (error) {
-
-        console.error(
-          '❌ Erro ao carregar atendimentos:',
-          error
-        );
-
-        Alert.alert(
-          'Erro de conexão',
-          `Falha ao conectar ao banco de dados:\n${error.message}`
-        );
-
-        return;
-      }
+    const {
+      data,
+      error,
+    } = await supabase
+      .from('atendimentos')
+      .select('*')
+      .order('created_at', {
+        ascending: false,
+      });
 
 
-      console.log('✅ Atendimentos carregados:', data?.length || 0);
+    if (error) {
 
-      setAtendimentos(data || []);
-
-    } catch (erro) {
-
-      console.error('❌ Erro inesperado:', erro);
+      console.error(
+        '❌ ERRO AO CARREGAR ATENDIMENTOS:',
+        error
+      );
 
       Alert.alert(
         'Erro',
-        'Falha ao carregar os atendimentos.'
+        'Não foi possível carregar os atendimentos.'
       );
+
+      return;
     }
+
+
+    console.log(
+      '✅ ATENDIMENTOS CARREGADOS:',
+      data
+    );
+
+
+    setAtendimentos(data || []);
   }
 
+
+  // =====================================
   // ADICIONAR ATENDIMENTO
+  // =====================================
 
   async function adicionarAtendimento(
     novoAtendimento
   ) {
 
-    try {
-
-      const {
-        data,
-        error,
-      } = await supabase
-        .from('atendimentos')
-        .insert({
-          tipo: novoAtendimento.tipo,
-          data: novoAtendimento.data,
-          horario: novoAtendimento.horario,
-          profissional: novoAtendimento.profissional,
-          observacoes: novoAtendimento.observacoes,
-          status: novoAtendimento.status,
-        })
-        .select();
+    console.log(
+      '📝 Tentando salvar atendimento:',
+      novoAtendimento
+    );
 
 
-      if (error) {
-
-        console.error(
-          'Erro Supabase:',
-          error.message || error
-        );
-
-        Alert.alert(
-          'Erro ao salvar',
-          error.message || 'Não foi possível salvar o atendimento. Verifique sua conexão.'
-        );
-
-        return;
-      }
-
-
-      if (!data || data.length === 0) {
-
-        console.error('Nenhum dado retornado do Supabase');
-
-        Alert.alert(
-          'Erro',
-          'Falha ao obter os dados salvos.'
-        );
-
-        return;
-      }
+    const {
+      data,
+      error,
+    } = await supabase
+      .from('atendimentos')
+      .insert({
+        tipo: novoAtendimento.tipo,
+        data: novoAtendimento.data,
+        horario: novoAtendimento.horario,
+        profissional: novoAtendimento.profissional,
+        observacoes: novoAtendimento.observacoes,
+        status: novoAtendimento.status,
+      })
+      .select();
 
 
-      // Adiciona o registro retornado
-      // pelo Supabase na lista
+    if (error) {
 
-      setAtendimentos([
-        data[0],
-        ...atendimentos,
-      ]);
-
-
-      // Volta para a lista
-
-      setTela('atendimentos');
-
-
-      Alert.alert(
-        'Sucesso',
-        'Atendimento registrado com sucesso!'
+      console.error(
+        '❌ ERRO AO SALVAR:',
+        error
       );
 
-    } catch (erro) {
-
-      console.error('Erro ao salvar atendimento:', erro);
-
       Alert.alert(
-        'Erro inesperado',
-        'Ocorreu um erro ao salvar. Tente novamente.'
+        'Erro',
+        error.message
       );
+
+      return;
     }
-  }
 
-  // EXCLUIR ATENDIMENTO
-  function excluirAtendimento(id) {
 
-    console.log('📍 FUNÇÃO EXCLUIR CHAMADA! ID:', id, 'Tipo:', typeof id);
+    console.log(
+      '✅ ATENDIMENTO SALVO:',
+      data
+    );
 
-    // Teste básico
-    console.log('✅ Mostrar alerta...');
+
+    if (data && data.length > 0) {
+
+      setAtendimentos(
+        atual => [
+          data[0],
+          ...atual,
+        ]
+      );
+
+    }
+
+
+    setTela('atendimentos');
+
 
     Alert.alert(
-      'Excluir atendimento',
-
-      'Deseja realmente excluir este registro?',
-
-      [
-
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-          onPress: () => console.log('❌ Cancelado'),
-        },
-
-        {
-
-          text: 'Excluir',
-
-          style: 'destructive',
-
-          onPress: async () => {
-
-            try {
-
-              console.log('🗑️ Iniciando DELETE para ID:', id);
-
-              const {
-                error,
-              } = await supabase
-                .from('atendimentos')
-                .delete()
-                .eq('id', id);
-
-
-              if (error) {
-
-                console.error(
-                  '❌ ERRO NO SUPABASE:',
-                  error.message || error,
-                  'Code:', error.code
-                );
-
-                Alert.alert(
-                  '❌ ERRO AO EXCLUIR',
-                  `Erro: ${error.message || 'Falha desconhecida'}\n\nDica: Verifique se:\n• Tabela tem coluna "id"\n• RLS permite DELETE\n• Você tem permissão`
-                );
-
-                return;
-              }
-
-
-              console.log('✅ DELETE SUCESSO!');
-
-              // Remove da tela
-
-              setAtendimentos(
-                atendimentos.filter(
-                  item => item.id !== id
-                )
-              );
-
-
-              Alert.alert(
-                '✅ SUCESSO',
-                'Atendimento excluído com sucesso!'
-              );
-
-            } catch (erro) {
-
-              console.error('❌ ERRO INESPERADO:', erro.message, erro);
-
-              Alert.alert(
-                '❌ ERRO INESPERADO',
-                `${erro.message || 'Erro desconhecido'}\n\nVerifique o console.`
-              );
-            }
-
-          },
-
-        },
-
-      ]
+      'Sucesso',
+      'Atendimento registrado com sucesso!'
     );
   }
 
-  // MOSTRAR DETALHES
+
+  // =====================================
+  // EXCLUIR ATENDIMENTO
+  // =====================================
+
+async function excluirAtendimento(id) {
+
+  console.log('🗑️ FUNÇÃO EXCLUIR CHAMADA!');
+  console.log('ID:', id);
+  console.log('TIPO DO ID:', typeof id);
+
+  console.log(
+    '📡 Enviando DELETE para o Supabase...'
+  );
+
+  try {
+
+    const {
+      data,
+      error,
+    } = await supabase
+      .from('atendimentos')
+      .delete()
+      .eq('id', id)
+      .select();
+
+
+    console.log(
+      '📦 RESPOSTA DO SUPABASE:'
+    );
+
+    console.log(
+      'DATA:',
+      data
+    );
+
+    console.log(
+      'ERROR:',
+      error
+    );
+
+
+    // ==============================
+    // SE DEU ERRO
+    // ==============================
+
+    if (error) {
+
+      console.error(
+        '❌ ERRO AO EXCLUIR:',
+        error
+      );
+
+      Alert.alert(
+        'Erro ao excluir',
+        error.message
+      );
+
+      return;
+    }
+
+
+    // ==============================
+    // ATUALIZA A LISTA
+    // ==============================
+
+    setAtendimentos(
+      atual =>
+        atual.filter(
+          item => item.id !== id
+        )
+    );
+
+
+    console.log(
+      '✅ ATENDIMENTO EXCLUÍDO!'
+    );
+
+
+    Alert.alert(
+      'Sucesso',
+      'Atendimento excluído com sucesso!'
+    );
+
+  } catch (erro) {
+
+    console.error(
+      '💥 ERRO INESPERADO:',
+      erro
+    );
+
+    Alert.alert(
+      'Erro',
+      'Ocorreu um erro ao excluir o atendimento.'
+    );
+
+  }
+}
+
+
+  // =====================================
+  // DETALHES DO ATENDIMENTO
+  // =====================================
 
   function abrirDetalhes(atendimento) {
 
@@ -291,7 +286,10 @@ ${atendimento.observacoes || 'Nenhuma'}`
     );
   }
 
+
+  // =====================================
   // TELA DE NOVO ATENDIMENTO
+  // =====================================
 
   if (tela === 'novo') {
 
@@ -318,7 +316,10 @@ ${atendimento.observacoes || 'Nenhuma'}`
     );
   }
 
+
+  // =====================================
   // TELA DE ATENDIMENTOS
+  // =====================================
 
   if (tela === 'atendimentos') {
 
@@ -364,6 +365,8 @@ ${atendimento.observacoes || 'Nenhuma'}`
 
         </View>
 
+
+        {/* LISTA */}
 
         <ScrollView
 
@@ -427,14 +430,23 @@ ${atendimento.observacoes || 'Nenhuma'}`
                     )
                   }
 
-          onDelete={() => {
-            console.log('🗑️ Tentando excluir atendimento:', {
-              id: atendimento.id,
-              tipo: atendimento.tipo,
-              data: atendimento.data,
-            });
-            excluirAtendimento(atendimento.id);
-          }}
+                  onDelete={() => {
+
+                    console.log(
+                      '🗑️ Tentando excluir atendimento:',
+                      {
+                        id: atendimento.id,
+                        tipo: atendimento.tipo,
+                        data: atendimento.data,
+                      }
+                    );
+
+
+                    excluirAtendimento(
+                      atendimento.id
+                    );
+
+                  }}
 
                 />
 
@@ -474,7 +486,10 @@ ${atendimento.observacoes || 'Nenhuma'}`
     );
   }
 
-  // HOME PRINCIPAL
+
+  // =====================================
+  // HOME
+  // =====================================
 
   return (
 
@@ -510,6 +525,7 @@ ${atendimento.observacoes || 'Nenhuma'}`
 
       >
 
+        {/* SAUDAÇÃO */}
 
         <View
           style={styles.welcome}
@@ -532,12 +548,14 @@ ${atendimento.observacoes || 'Nenhuma'}`
         </View>
 
 
+        {/* RESUMO */}
+
         <SectionTitle
 
           title="Resumo"
 
           subtitle={
-            "Visão geral dos seus acompanhamentos"
+            'Visão geral dos seus acompanhamentos'
           }
 
         />
@@ -596,6 +614,9 @@ ${atendimento.observacoes || 'Nenhuma'}`
 
         />
 
+
+        {/* ACOMPANHAMENTOS */}
+
         <Card
 
           title="Acompanhamentos"
@@ -623,7 +644,7 @@ ${atendimento.observacoes || 'Nenhuma'}`
           title="Ações rápidas"
 
           subtitle={
-            "Registre novas informações"
+            'Registre novas informações'
           }
 
         />
@@ -667,12 +688,15 @@ ${atendimento.observacoes || 'Nenhuma'}`
 
         />
 
+
+        {/* ÚLTIMOS REGISTROS */}
+
         <SectionTitle
 
           title="Últimos registros"
 
           subtitle={
-            "Atividades recentes"
+            'Atividades recentes'
           }
 
         />
@@ -685,7 +709,7 @@ ${atendimento.observacoes || 'Nenhuma'}`
           .map(
             atendimento => (
 
-              <View
+              <TouchableOpacity
 
                 key={
                   atendimento.id
@@ -695,111 +719,88 @@ ${atendimento.observacoes || 'Nenhuma'}`
                   styles.historyCard
                 }
 
+                onPress={() =>
+                  abrirDetalhes(
+                    atendimento
+                  )
+                }
+
               >
 
-                <TouchableOpacity
-
-                  onPress={() =>
-                    abrirDetalhes(
-                      atendimento
-                    )
+                <View
+                  style={
+                    styles.historyIcon
                   }
-
-                  style={{flex: 1}}
-
                 >
 
-                  <View
-                    style={
-                      styles.historyIcon
+                  <Text>
+
+                    {
+                      atendimento.tipo ===
+                      'Consulta'
+
+                        ? '📅'
+
+                        : '🩺'
                     }
-                  >
 
-                    <Text>
-
-                      {
-                        atendimento.tipo ===
-                        'Consulta'
-
-                          ? '📅'
-
-                          : '🩺'
-                      }
-
-                    </Text>
-
-                  </View>
-
-
-                  <View
-                    style={
-                      styles.historyContent
-                    }
-                  >
-
-                    <Text
-                      style={
-                        styles.historyTitle
-                      }
-                    >
-
-                      {
-                        atendimento.tipo
-                      }
-
-                      {' realizado'}
-
-                    </Text>
-
-
-                    <Text
-                      style={
-                        styles.historyDescription
-                      }
-                    >
-
-                      {
-                        atendimento.data
-                      }
-
-                      {' às '}
-
-                      {
-                        atendimento.horario
-                      }
-
-                    </Text>
-
-                  </View>
-
-                </TouchableOpacity>
-
-                <TouchableOpacity
-
-                  onPress={() => {
-                    console.log('🗑️ Excluindo do histórico:', atendimento.id);
-                    excluirAtendimento(atendimento.id);
-                  }}
-
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    justifyContent: 'center',
-                  }}
-
-                >
-
-                  <Text style={{color: '#B00020', fontSize: 12, fontWeight: '600'}}>
-                    ✕
                   </Text>
 
-                </TouchableOpacity>
+                </View>
 
-              </View>
+
+                <View
+                  style={
+                    styles.historyContent
+                  }
+                >
+
+                  <Text
+                    style={
+                      styles.historyTitle
+                    }
+                  >
+
+                    {
+                      atendimento.tipo
+                    }
+
+                    {' realizado'}
+
+                  </Text>
+
+
+                  <Text
+                    style={
+                      styles.historyDescription
+                    }
+                  >
+
+                    {
+                      atendimento.profissional
+                    }
+
+                  </Text>
+
+
+                  <Text
+                    style={
+                      styles.historyDate
+                    }
+                  >
+
+                    {
+                      atendimento.data
+                    }
+
+                  </Text>
+
+                </View>
+
+              </TouchableOpacity>
 
             )
-          )
-        }
+          )}
 
       </ScrollView>
 
@@ -807,7 +808,10 @@ ${atendimento.observacoes || 'Nenhuma'}`
   );
 }
 
+
+// =====================================
 // ESTILOS
+// =====================================
 
 const styles = StyleSheet.create({
 
@@ -822,7 +826,10 @@ const styles = StyleSheet.create({
     paddingBottom: 35,
   },
 
+
+  // ==============================
   // SAUDAÇÃO
+  // ==============================
 
   welcome: {
     marginBottom: 25,
@@ -845,8 +852,10 @@ const styles = StyleSheet.create({
   },
 
 
-
+  // ==============================
   // HISTÓRICO
+  // ==============================
+
   historyCard: {
     backgroundColor: '#FFFFFF',
 
@@ -922,7 +931,10 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 
+
+  // ==============================
   // LISTA
+  // ==============================
 
   listaHeader: {
     backgroundColor: '#FFFFFF',
@@ -970,7 +982,10 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
-  // TELA VAZIA
+
+  // ==============================
+  // VAZIO
+  // ==============================
 
   vazio: {
     backgroundColor: '#FFFFFF',
@@ -1011,7 +1026,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // BOTÃO NOVO
+
+  // ==============================
+  // BOTÃO
+  // ==============================
+
   novoButton: {
     backgroundColor: '#8B008B',
 

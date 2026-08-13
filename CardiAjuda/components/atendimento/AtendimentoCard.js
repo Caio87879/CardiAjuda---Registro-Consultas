@@ -5,6 +5,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from 'react-native';
 
 export default function AtendimentoCard({
@@ -58,13 +59,31 @@ export default function AtendimentoCard({
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.excluir}
-        onPress={onDelete}
-      >
-        <Text style={styles.excluirTexto}>
-          Excluir
-        </Text>
-      </TouchableOpacity>
+  style={styles.excluir}
+  onPress={() => {
+    Alert.alert(
+      'TESTE',
+      'O botão Excluir foi clicado!'
+    );
+
+    console.log(
+      'BOTÃO EXCLUIR CLICADO'
+    );
+
+    console.log(
+      'ID:',
+      atendimento.id
+    );
+
+    if (onDelete) {
+      onDelete();
+    }
+  }}
+>
+  <Text style={styles.excluirTexto}>
+    Excluir
+  </Text>
+</TouchableOpacity>
 
     </View>
   );
