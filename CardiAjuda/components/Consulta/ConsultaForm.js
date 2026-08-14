@@ -10,34 +10,25 @@ import {
 } from 'react-native';
 
 
-export default function AtendimentoForm({
+export default function ConsultaForm({
   onSave,
   onCancel,
 }) {
-
-  // =====================================
-  // CAMPOS DO FORMULÁRIO
-  // =====================================
 
   const [paciente, setPaciente] = useState('');
   const [data, setData] = useState('');
   const [horario, setHorario] = useState('');
   const [profissional, setProfissional] = useState('');
-  const [queixaPrincipal, setQueixaPrincipal] = useState('');
-  const [classificacao, setClassificacao] = useState('');
+  const [especialidade, setEspecialidade] = useState('');
+  const [motivo, setMotivo] = useState('');
   const [observacoes, setObservacoes] = useState('');
 
-
-  // =====================================
-  // SALVAR TRIAGEM
-  // =====================================
 
   function salvar() {
 
     console.log(
-      '🩺 Botão salvar triagem clicado'
+      'Botão salvar consulta clicado'
     );
-
 
     console.log(
       'Campos:',
@@ -46,24 +37,19 @@ export default function AtendimentoForm({
         data,
         horario,
         profissional,
-        queixaPrincipal,
-        classificacao,
-        observacoes,
+        especialidade,
+        motivo,
       }
     );
 
-
-    // ==============================
-    // VALIDAÇÃO
-    // ==============================
 
     if (
       !paciente ||
       !data ||
       !horario ||
       !profissional ||
-      !queixaPrincipal ||
-      !classificacao
+      !especialidade ||
+      !motivo
     ) {
 
       alert(
@@ -74,11 +60,9 @@ export default function AtendimentoForm({
     }
 
 
-    // ==============================
-    // OBJETO DA TRIAGEM
-    // ==============================
+    const novaConsulta = {
 
-    const novoAtendimento = {
+      id: Date.now().toString(),
 
       paciente,
 
@@ -88,10 +72,9 @@ export default function AtendimentoForm({
 
       profissional,
 
-      queixa_principal:
-        queixaPrincipal,
+      especialidade,
 
-      classificacao,
+      motivo,
 
       observacoes,
 
@@ -99,14 +82,13 @@ export default function AtendimentoForm({
 
 
     console.log(
-      '📤 Enviando triagem:',
-      novoAtendimento
+      'Enviando consulta:',
+      novaConsulta
     );
 
 
-    // Envia os dados para o Home
     onSave(
-      novoAtendimento
+      novaConsulta
     );
   }
 
@@ -127,9 +109,7 @@ export default function AtendimentoForm({
 
     >
 
-      {/* =====================================
-          VOLTAR
-      ===================================== */}
+      {/* VOLTAR */}
 
       <TouchableOpacity
         onPress={onCancel}
@@ -144,63 +124,28 @@ export default function AtendimentoForm({
       </TouchableOpacity>
 
 
-      {/* =====================================
-          TÍTULO
-      ===================================== */}
+      {/* TÍTULO */}
 
       <Text
         style={styles.titulo}
       >
-        Novo atendimento
+        Nova consulta
       </Text>
 
 
       <Text
         style={styles.subtitulo}
       >
-        Registre a triagem inicial do paciente.
+        Registre os dados da consulta realizada.
       </Text>
 
 
-      {/* =====================================
-          TIPO
-      ===================================== */}
+      {/* PACIENTE */}
 
       <Text
         style={styles.label}
       >
-        Tipo de atendimento
-      </Text>
-
-
-      <View
-        style={styles.tipoContainer}
-      >
-
-        <Text
-          style={styles.tipoIcon}
-        >
-          🩺
-        </Text>
-
-
-        <Text
-          style={styles.tipoTexto}
-        >
-          Triagem
-        </Text>
-
-      </View>
-
-
-      {/* =====================================
-          PACIENTE
-      ===================================== */}
-
-      <Text
-        style={styles.label}
-      >
-        Nome do paciente *
+        Paciente *
       </Text>
 
 
@@ -208,22 +153,18 @@ export default function AtendimentoForm({
 
         style={styles.input}
 
-        placeholder="Nome completo do paciente"
+        placeholder="Nome do paciente"
 
         placeholderTextColor="#999"
 
         value={paciente}
 
-        onChangeText={
-          setPaciente
-        }
+        onChangeText={setPaciente}
 
       />
 
 
-      {/* =====================================
-          DATA
-      ===================================== */}
+      {/* DATA */}
 
       <Text
         style={styles.label}
@@ -242,16 +183,12 @@ export default function AtendimentoForm({
 
         value={data}
 
-        onChangeText={
-          setData
-        }
+        onChangeText={setData}
 
       />
 
 
-      {/* =====================================
-          HORÁRIO
-      ===================================== */}
+      {/* HORÁRIO */}
 
       <Text
         style={styles.label}
@@ -270,21 +207,17 @@ export default function AtendimentoForm({
 
         value={horario}
 
-        onChangeText={
-          setHorario
-        }
+        onChangeText={setHorario}
 
       />
 
 
-      {/* =====================================
-          PROFISSIONAL
-      ===================================== */}
+      {/* PROFISSIONAL */}
 
       <Text
         style={styles.label}
       >
-        Profissional responsável *
+        Profissional *
       </Text>
 
 
@@ -298,54 +231,17 @@ export default function AtendimentoForm({
 
         value={profissional}
 
-        onChangeText={
-          setProfissional
-        }
+        onChangeText={setProfissional}
 
       />
 
 
-      {/* =====================================
-          QUEIXA PRINCIPAL
-      ===================================== */}
+      {/* ESPECIALIDADE */}
 
       <Text
         style={styles.label}
       >
-        Queixa principal *
-      </Text>
-
-
-      <TextInput
-
-        style={[
-          styles.input,
-          styles.textoGrande,
-        ]}
-
-        placeholder="Descreva a queixa principal do paciente"
-
-        placeholderTextColor="#999"
-
-        value={queixaPrincipal}
-
-        onChangeText={
-          setQueixaPrincipal
-        }
-
-        multiline
-
-      />
-
-
-      {/* =====================================
-          CLASSIFICAÇÃO
-      ===================================== */}
-
-      <Text
-        style={styles.label}
-      >
-        Classificação da triagem *
+        Especialidade *
       </Text>
 
 
@@ -353,22 +249,44 @@ export default function AtendimentoForm({
 
         style={styles.input}
 
-        placeholder="Ex: Baixa prioridade"
+        placeholder="Ex: Cardiologia"
 
         placeholderTextColor="#999"
 
-        value={classificacao}
+        value={especialidade}
 
         onChangeText={
-          setClassificacao
+          setEspecialidade
         }
 
       />
 
 
-      {/* =====================================
-          OBSERVAÇÕES
-      ===================================== */}
+      {/* MOTIVO */}
+
+      <Text
+        style={styles.label}
+      >
+        Motivo da consulta *
+      </Text>
+
+
+      <TextInput
+
+        style={styles.input}
+
+        placeholder="Informe o motivo da consulta"
+
+        placeholderTextColor="#999"
+
+        value={motivo}
+
+        onChangeText={setMotivo}
+
+      />
+
+
+      {/* OBSERVAÇÕES */}
 
       <Text
         style={styles.label}
@@ -384,7 +302,7 @@ export default function AtendimentoForm({
           styles.observacoes,
         ]}
 
-        placeholder="Observações adicionais..."
+        placeholder="Observações da consulta..."
 
         placeholderTextColor="#999"
 
@@ -399,9 +317,7 @@ export default function AtendimentoForm({
       />
 
 
-      {/* =====================================
-          SALVAR
-      ===================================== */}
+      {/* SALVAR */}
 
       <TouchableOpacity
 
@@ -416,15 +332,13 @@ export default function AtendimentoForm({
         <Text
           style={styles.salvarTexto}
         >
-          🩺 Registrar triagem
+          Salvar consulta
         </Text>
 
       </TouchableOpacity>
 
 
-      {/* =====================================
-          CANCELAR
-      ===================================== */}
+      {/* CANCELAR */}
 
       <TouchableOpacity
 
@@ -446,10 +360,6 @@ export default function AtendimentoForm({
   );
 }
 
-
-// =====================================
-// ESTILOS
-// =====================================
 
 const styles = StyleSheet.create({
 
@@ -496,51 +406,6 @@ const styles = StyleSheet.create({
   },
 
 
-  // =====================================
-  // TIPO
-  // =====================================
-
-  tipoContainer: {
-    height: 54,
-
-    backgroundColor: '#E8F4FF',
-
-    borderWidth: 1,
-
-    borderColor: '#DCE3E8',
-
-    borderRadius: 14,
-
-    paddingHorizontal: 15,
-
-    flexDirection: 'row',
-
-    alignItems: 'center',
-
-    marginBottom: 18,
-  },
-
-
-  tipoIcon: {
-    fontSize: 22,
-
-    marginRight: 10,
-  },
-
-
-  tipoTexto: {
-    fontSize: 15,
-
-    fontWeight: '600',
-
-    color: '#8B008B',
-  },
-
-
-  // =====================================
-  // INPUT
-  // =====================================
-
   input: {
     height: 54,
 
@@ -562,15 +427,6 @@ const styles = StyleSheet.create({
   },
 
 
-  textoGrande: {
-    height: 90,
-
-    paddingTop: 15,
-
-    textAlignVertical: 'top',
-  },
-
-
   observacoes: {
     height: 110,
 
@@ -579,10 +435,6 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
 
-
-  // =====================================
-  // SALVAR
-  // =====================================
 
   salvar: {
     height: 54,
@@ -607,10 +459,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-
-  // =====================================
-  // CANCELAR
-  // =====================================
 
   cancelar: {
     height: 50,
