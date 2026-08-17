@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Alert,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 
 import { supabase } from './lib/supabase';
@@ -30,52 +31,81 @@ import ConsultaForm
   from './components/Consulta/ConsultaForm';
 
 
+// =====================================================
+// HOME
+// =====================================================
+
 export default function Home() {
 
-  // ==========================================
+
+  // ===================================================
   // CONTROLE DA TELA
-  // ==========================================
+  // ===================================================
 
   const [tela, setTela] = useState('home');
 
 
-  // ==========================================
+  // ===================================================
   // LISTAS
-  // ==========================================
+  // ===================================================
 
-  const [atendimentos, setAtendimentos] =
-    useState([]);
+  const [atendimentos, setAtendimentos] = useState([]);
 
-  const [consultas, setConsultas] =
-    useState([]);
+  const [consultas, setConsultas] = useState([]);
 
 
-  // ==========================================
-  // CARREGAR DADOS
-  // ==========================================
+  // ===================================================
+  // CARREGAMENTO
+  // ===================================================
+
+  const [carregando, setCarregando] = useState(true);
+
+
+  // ===================================================
+  // EXCLUSÃO
+  // ===================================================
+
+  const [excluindo, setExcluindo] = useState(false);
+
+
+  // ===================================================
+  // CARREGAR AO ABRIR
+  // ===================================================
 
   useEffect(() => {
 
-    carregarAtendimentos();
-
-    carregarConsultas();
+    carregarDados();
 
   }, []);
 
 
-  // ==========================================
-  // CARREGAR TRIAGENS
-  // ==========================================
+  // ===================================================
+  // CARREGAR DADOS
+  // ===================================================
 
-  async function carregarAtendimentos() {
+  async function carregarDados() {
 
-    console.log(
-      'Carregando atendimentos...'
-    );
+    console.log('================================');
+    console.log('CARREGANDO DADOS...');
+    console.log('================================');
 
-    const { data, error } = await supabase
+
+    setCarregando(true);
+
+
+    // =================================================
+    // ATENDIMENTOS
+    // =================================================
+
+    const {
+      data: dadosAtendimentos,
+      error: erroAtendimentos,
+    } = await supabase
+
       .from('atendimentos')
+
       .select('*')
+
       .order(
         'created_at',
         {
@@ -84,47 +114,65 @@ export default function Home() {
       );
 
 
-    if (error) {
+    if (erroAtendimentos) {
 
       console.log(
-        'Erro ao carregar atendimentos:',
-        error
+        'ERRO AO CARREGAR ATENDIMENTOS:',
+        erroAtendimentos
       );
 
       Alert.alert(
         'Erro',
+        erroAtendimentos.message ||
         'Não foi possível carregar os atendimentos.'
       );
 
-      return;
+      setAtendimentos([]);
+
+    } else {
+
+      console.log(
+        'ATENDIMENTOS CARREGADOS:',
+        dadosAtendimentos
+      );
+
+
+      const lista =
+        (dadosAtendimentos || []).map(
+          item => ({
+
+            ...item,
+
+            origem: 'atendimento',
+
+            tipo: 'Triagem',
+
+          })
+        );
+
+
+      setAtendimentos(lista);
     }
 
 
-    console.log(
-      'Atendimentos carregados:',
-      data
-    );
+    // =================================================
+    // CONSULTAS
+    // =================================================
+
+    console.log('================================');
+    console.log('CARREGANDO CONSULTAS...');
+    console.log('================================');
 
 
-    setAtendimentos(
-      data || []
-    );
-  }
+    const {
+      data: dadosConsultas,
+      error: erroConsultas,
+    } = await supabase
 
-
-  // ==========================================
-  // CARREGAR CONSULTAS
-  // ==========================================
-
-  async function carregarConsultas() {
-
-    console.log(
-      'Carregando consultas...'
-    );
-
-    const { data, error } = await supabase
       .from('consultas')
+
       .select('*')
+
       .order(
         'created_at',
         {
@@ -133,455 +181,650 @@ export default function Home() {
       );
 
 
-    if (error) {
+    if (erroConsultas) {
 
       console.log(
-        'Erro ao carregar consultas:',
-        error
+        'ERRO AO CARREGAR CONSULTAS:',
+        erroConsultas
       );
 
       Alert.alert(
         'Erro',
+        erroConsultas.message ||
         'Não foi possível carregar as consultas.'
       );
 
-      return;
+      setConsultas([]);
+
+    } else {
+
+      console.log(
+        'CONSULTAS CARREGADAS:',
+        dadosConsultas
+      );
+
+
+      const lista =
+        (dadosConsultas || []).map(
+          item => ({
+
+            ...item,
+
+            origem: 'consulta',
+
+            tipo: 'Consulta',
+
+          })
+        );
+
+
+      setConsultas(lista);
     }
 
 
+    setCarregando(false);
+
+
     console.log(
-      'Consultas carregadas:',
-      data
-    );
-
-
-    setConsultas(
-      data || []
+      'CARREGAMENTO FINALIZADO'
     );
   }
 
 
-  // ==========================================
-  // ADICIONAR TRIAGEM
-  // ==========================================
+  // ===================================================
+  // HISTÓRICO
+  // ===================================================
+
+  const historico = [
+
+    ...atendimentos,
+
+    ...consultas,
+
+  ].sort(
+
+    (a, b) => {
+
+      const dataA =
+        new Date(a.created_at || 0);
+
+      const dataB =
+        new Date(b.created_at || 0);
+
+      return dataB - dataA;
+
+    }
+
+  );
+
+
+  // ===================================================
+  // SALVAR TRIAGEM
+  // ===================================================
 
   async function adicionarAtendimento(
     novoAtendimento
   ) {
 
+    console.log('================================');
+    console.log('SALVANDO TRIAGEM');
+    console.log('================================');
+
+
+    const dados = {
+
+      tipo: 'Triagem',
+
+      paciente:
+        novoAtendimento.paciente,
+
+      data:
+        novoAtendimento.data,
+
+      horario:
+        novoAtendimento.horario,
+
+      profissional:
+        novoAtendimento.profissional,
+
+      queixa_principal:
+        novoAtendimento.queixa_principal,
+
+      classificacao:
+        novoAtendimento.classificacao,
+
+      observacoes:
+        novoAtendimento.observacoes || null,
+
+    };
+
+
     console.log(
-      'Salvando triagem:',
-      novoAtendimento
+      'Dados enviados:',
+      dados
     );
 
 
-    const { data, error } = await supabase
+    const {
+      data,
+      error,
+    } = await supabase
 
       .from('atendimentos')
 
-      .insert([
+      .insert([dados])
 
-        {
-          tipo: 'Triagem',
+      .select()
 
-          paciente:
-            novoAtendimento.paciente,
-
-          data:
-            novoAtendimento.data,
-
-          horario:
-            novoAtendimento.horario,
-
-          profissional:
-            novoAtendimento.profissional,
-
-          queixa_principal:
-            novoAtendimento.queixa_principal,
-
-          classificacao:
-            novoAtendimento.classificacao,
-
-          observacoes:
-            novoAtendimento.observacoes,
-        },
-
-      ])
-
-      .select();
+      .single();
 
 
     if (error) {
 
       console.log(
-        'Erro ao salvar triagem:',
+        'ERRO AO SALVAR TRIAGEM:',
         error
       );
 
+
       Alert.alert(
-        'Erro',
+        'Erro ao salvar',
+        error.message ||
         'Não foi possível salvar a triagem.'
       );
+
 
       return;
     }
 
 
     console.log(
-      'Triagem salva:',
+      'TRIAGEM SALVA:',
       data
     );
 
 
     setAtendimentos(
-      [
-        data[0],
-        ...atendimentos,
+      prev => [
+
+        {
+          ...data,
+
+          origem: 'atendimento',
+
+          tipo: 'Triagem',
+
+        },
+
+        ...prev,
+
       ]
     );
 
 
-    setTela(
-      'atendimentos'
+    Alert.alert(
+      'Sucesso',
+      'Triagem registrada com sucesso!'
     );
+
+
+    setTela('atendimentos');
   }
 
 
-  // ==========================================
-  // ADICIONAR CONSULTA
-  // ==========================================
+  // ===================================================
+  // SALVAR CONSULTA
+  // ===================================================
 
   async function adicionarConsulta(
     novaConsulta
   ) {
 
+    console.log('================================');
+    console.log('SALVANDO CONSULTA');
+    console.log('================================');
+
+
+    const dados = {
+
+      paciente:
+        novaConsulta.paciente,
+
+      data:
+        novaConsulta.data,
+
+      horario:
+        novaConsulta.horario,
+
+      profissional:
+        novaConsulta.profissional,
+
+      especialidade:
+        novaConsulta.especialidade,
+
+      motivo:
+        novaConsulta.motivo,
+
+      observacoes:
+        novaConsulta.observacoes || null,
+
+    };
+
+
     console.log(
-      'Salvando consulta:',
-      novaConsulta
+      'Dados enviados:',
+      dados
     );
 
 
-    const { data, error } = await supabase
+    const {
+      data,
+      error,
+    } = await supabase
 
       .from('consultas')
 
-      .insert([
+      .insert([dados])
 
-        {
-          paciente:
-            novaConsulta.paciente,
+      .select()
 
-          data:
-            novaConsulta.data,
-
-          horario:
-            novaConsulta.horario,
-
-          profissional:
-            novaConsulta.profissional,
-
-          especialidade:
-            novaConsulta.especialidade,
-
-          motivo:
-            novaConsulta.motivo,
-
-          observacoes:
-            novaConsulta.observacoes,
-        },
-
-      ])
-
-      .select();
+      .single();
 
 
     if (error) {
 
       console.log(
-        'Erro ao salvar consulta:',
+        'ERRO AO SALVAR CONSULTA:',
         error
       );
 
+
       Alert.alert(
-        'Erro',
+        'Erro ao salvar',
+        error.message ||
         'Não foi possível salvar a consulta.'
       );
+
 
       return;
     }
 
 
     console.log(
-      'Consulta salva:',
+      'CONSULTA SALVA:',
       data
     );
 
 
     setConsultas(
-      [
-        data[0],
-        ...consultas,
+      prev => [
+
+        {
+          ...data,
+
+          origem: 'consulta',
+
+          tipo: 'Consulta',
+
+        },
+
+        ...prev,
+
       ]
     );
 
 
-    setTela(
-      'consultas'
+    Alert.alert(
+      'Sucesso',
+      'Consulta registrada com sucesso!'
     );
+
+
+    setTela('atendimentos');
   }
 
 
-  // ==========================================
-  // EXCLUIR TRIAGEM
-  // ==========================================
+  // ===================================================
+  // EXCLUIR REGISTRO
+  // ===================================================
 
-  function excluirAtendimento(
-    id
+  async function excluirRegistro(
+    registro
   ) {
 
-    Alert.alert(
-
-      'Excluir triagem',
-
-      'Deseja realmente excluir este registro?',
-
-      [
-
-        {
-          text: 'Cancelar',
-
-          style: 'cancel',
-        },
+    console.log('================================');
+    console.log('EXCLUIR REGISTRO CHAMADO');
+    console.log('ID:', registro.id);
+    console.log('TIPO:', registro.tipo);
+    console.log('ORIGEM:', registro.origem);
+    console.log('================================');
 
 
-        {
+    if (!registro) {
 
-          text: 'Excluir',
+      console.log(
+        'ERRO: registro não existe'
+      );
 
-          style: 'destructive',
-
-          onPress: async () => {
-
-            console.log(
-              'Excluindo triagem:',
-              id
-            );
+      return;
+    }
 
 
-            const { error } =
-              await supabase
+    if (!registro.id) {
 
-                .from('atendimentos')
+      console.log(
+        'ERRO: registro não possui ID'
+      );
 
-                .delete()
+      Alert.alert(
+        'Erro',
+        'Este registro não possui um ID válido.'
+      );
 
-                .eq(
-                  'id',
-                  id
-                );
-
-
-            if (error) {
-
-              console.log(
-                'Erro ao excluir:',
-                error
-              );
-
-              Alert.alert(
-                'Erro',
-                'Não foi possível excluir o registro.'
-              );
-
-              return;
-            }
+      return;
+    }
 
 
-            setAtendimentos(
+    if (excluindo) {
 
-              atendimentos.filter(
-                item =>
-                  item.id !== id
-              )
+      console.log(
+        'Já existe uma exclusão em andamento.'
+      );
 
-            );
+      return;
+    }
 
 
-            console.log(
-              'Triagem excluída.'
-            );
+    setExcluindo(true);
 
-          },
 
-        },
+    try {
 
-      ]
+      // =============================================
+      // EXCLUIR TRIAGEM
+      // =============================================
 
-    );
+      if (
+        registro.origem ===
+        'atendimento'
+      ) {
+
+        console.log(
+          'EXCLUINDO DA TABELA: atendimentos'
+        );
+
+
+        const {
+          data,
+          error,
+        } = await supabase
+
+          .from('atendimentos')
+
+          .delete()
+
+          .eq(
+            'id',
+            registro.id
+          )
+
+          .select();
+
+
+        console.log(
+          'RESPOSTA DA EXCLUSÃO:',
+          {
+            data,
+            error,
+          }
+        );
+
+
+        if (error) {
+
+          console.log(
+            'ERRO AO EXCLUIR TRIAGEM:',
+            error
+          );
+
+
+          Alert.alert(
+            'Erro ao excluir',
+            error.message ||
+            'Não foi possível excluir a triagem.'
+          );
+
+
+          return;
+        }
+
+
+        console.log(
+          'TRIAGEM EXCLUÍDA COM SUCESSO!'
+        );
+
+
+        setAtendimentos(
+
+          prev =>
+
+            prev.filter(
+              item =>
+                item.id !==
+                registro.id
+            )
+
+        );
+
+
+        Alert.alert(
+          'Sucesso',
+          'Triagem excluída com sucesso!'
+        );
+
+
+        return;
+      }
+
+
+      // =============================================
+      // EXCLUIR CONSULTA
+      // =============================================
+
+      if (
+        registro.origem ===
+        'consulta'
+      ) {
+
+        console.log(
+          'EXCLUINDO DA TABELA: consultas'
+        );
+
+
+        const {
+          data,
+          error,
+        } = await supabase
+
+          .from('consultas')
+
+          .delete()
+
+          .eq(
+            'id',
+            registro.id
+          )
+
+          .select();
+
+
+        console.log(
+          'RESPOSTA DA EXCLUSÃO:',
+          {
+            data,
+            error,
+          }
+        );
+
+
+        if (error) {
+
+          console.log(
+            'ERRO AO EXCLUIR CONSULTA:',
+            error
+          );
+
+
+          Alert.alert(
+            'Erro ao excluir',
+            error.message ||
+            'Não foi possível excluir a consulta.'
+          );
+
+
+          return;
+        }
+
+
+        console.log(
+          'CONSULTA EXCLUÍDA COM SUCESSO!'
+        );
+
+
+        setConsultas(
+
+          prev =>
+
+            prev.filter(
+              item =>
+                item.id !==
+                registro.id
+            )
+
+        );
+
+
+        Alert.alert(
+          'Sucesso',
+          'Consulta excluída com sucesso!'
+        );
+
+
+        return;
+      }
+
+
+      console.log(
+        'ERRO: origem desconhecida:',
+        registro.origem
+      );
+
+
+      Alert.alert(
+        'Erro',
+        'Não foi possível identificar o tipo do registro.'
+      );
+
+    }
+
+    catch (erro) {
+
+      console.log(
+        'ERRO INESPERADO AO EXCLUIR:',
+        erro
+      );
+
+
+      Alert.alert(
+        'Erro',
+        erro.message ||
+        'Ocorreu um erro inesperado.'
+      );
+
+    }
+
+    finally {
+
+      setExcluindo(false);
+
+    }
   }
 
 
-  // ==========================================
-  // EXCLUIR CONSULTA
-  // ==========================================
+  // ===================================================
+  // DETALHES
+  // ===================================================
 
-  function excluirConsulta(
-    id
+  function abrirDetalhes(
+    registro
   ) {
 
-    Alert.alert(
+    if (
+      registro.origem ===
+      'atendimento'
+    ) {
 
-      'Excluir consulta',
+      Alert.alert(
 
-      'Deseja realmente excluir esta consulta?',
+        'Atendimento de triagem',
 
-      [
+        `Paciente: ${registro.paciente}
 
-        {
-          text: 'Cancelar',
+Data: ${registro.data}
 
-          style: 'cancel',
-        },
+Horário: ${registro.horario}
 
-
-        {
-
-          text: 'Excluir',
-
-          style: 'destructive',
-
-          onPress: async () => {
-
-            console.log(
-              'Excluindo consulta:',
-              id
-            );
-
-
-            const { error } =
-              await supabase
-
-                .from('consultas')
-
-                .delete()
-
-                .eq(
-                  'id',
-                  id
-                );
-
-
-            if (error) {
-
-              console.log(
-                'Erro ao excluir consulta:',
-                error
-              );
-
-              Alert.alert(
-                'Erro',
-                'Não foi possível excluir a consulta.'
-              );
-
-              return;
-            }
-
-
-            setConsultas(
-
-              consultas.filter(
-                item =>
-                  item.id !== id
-              )
-
-            );
-
-
-            console.log(
-              'Consulta excluída.'
-            );
-
-          },
-
-        },
-
-      ]
-
-    );
-  }
-
-
-  // ==========================================
-  // DETALHES DA TRIAGEM
-  // ==========================================
-
-  function abrirDetalhesAtendimento(
-    atendimento
-  ) {
-
-    Alert.alert(
-
-      '🩺 Triagem',
-
-      `Paciente: ${atendimento.paciente}
-
-Data: ${atendimento.data}
-
-Horário: ${atendimento.horario}
-
-Profissional: ${atendimento.profissional}
+Profissional: ${registro.profissional}
 
 Queixa principal:
-${atendimento.queixa_principal || 'Não informado'}
+${registro.queixa_principal}
 
 Classificação:
-${atendimento.classificacao || 'Não informado'}
+${registro.classificacao}
 
 Observações:
-${atendimento.observacoes || 'Nenhuma'}`
+${registro.observacoes || 'Nenhuma'}`
 
-    );
-  }
+      );
 
 
-  // ==========================================
-  // DETALHES DA CONSULTA
-  // ==========================================
+      return;
+    }
 
-  function abrirDetalhesConsulta(
-    consulta
-  ) {
 
     Alert.alert(
 
-      '📅 Consulta',
+      'Consulta',
 
-      `Paciente: ${consulta.paciente}
+      `Paciente: ${registro.paciente}
 
-Data: ${consulta.data}
+Data: ${registro.data}
 
-Horário: ${consulta.horario}
+Horário: ${registro.horario}
 
-Profissional: ${consulta.profissional}
+Profissional: ${registro.profissional}
 
 Especialidade:
-${consulta.especialidade}
+${registro.especialidade}
 
 Motivo:
-${consulta.motivo}
+${registro.motivo}
 
 Observações:
-${consulta.observacoes || 'Nenhuma'}`
+${registro.observacoes || 'Nenhuma'}`
 
     );
   }
 
 
-  // ==========================================
-  // TELA DE NOVA TRIAGEM
-  // ==========================================
+  // ===================================================
+  // TELA DE TRIAGEM
+  // ===================================================
 
-  if (tela === 'novoAtendimento') {
+  if (
+    tela ===
+    'novoAtendimento'
+  ) {
 
     return (
 
@@ -607,11 +850,14 @@ ${consulta.observacoes || 'Nenhuma'}`
   }
 
 
-  // ==========================================
-  // TELA DE NOVA CONSULTA
-  // ==========================================
+  // ===================================================
+  // TELA DE CONSULTA
+  // ===================================================
 
-  if (tela === 'novaConsulta') {
+  if (
+    tela ===
+    'novaConsulta'
+  ) {
 
     return (
 
@@ -637,426 +883,14 @@ ${consulta.observacoes || 'Nenhuma'}`
   }
 
 
-  // ==========================================
-  // HOME
-  // ==========================================
-
-  if (tela === 'home') {
-
-    return (
-
-      <SafeAreaView
-        style={styles.container}
-      >
-
-        <Header
-
-          userName="Usuário"
-
-          onNotificationPress={() =>
-            Alert.alert(
-              'Notificações',
-              'Você não possui novas notificações.'
-            )
-          }
-
-        />
-
-
-        <ScrollView
-
-          contentContainerStyle={
-            styles.content
-          }
-
-          showsVerticalScrollIndicator={
-            false
-          }
-
-        >
-
-          {/* SAUDAÇÃO */}
-
-          <View
-            style={styles.welcome}
-          >
-
-            <Text
-              style={styles.welcomeTitle}
-            >
-              Olá! 👋
-            </Text>
-
-
-            <Text
-              style={styles.welcomeText}
-            >
-              Acompanhe seus registros de saúde
-              de forma simples e organizada.
-            </Text>
-
-          </View>
-
-
-          {/* RESUMO */}
-
-          <SectionTitle
-
-            title="Resumo"
-
-            subtitle={
-              'Visão geral dos seus acompanhamentos'
-            }
-
-          />
-
-
-          {/* ATENDIMENTOS */}
-
-          <Card
-
-            title="Atendimentos"
-
-            value={
-              String(
-                atendimentos.length
-              )
-            }
-
-            description="Triagens registradas"
-
-            icon="🩺"
-
-            onPress={() =>
-              setTela(
-                'atendimentos'
-              )
-            }
-
-          />
-
-
-          {/* CONSULTAS */}
-
-          <Card
-
-            title="Consultas"
-
-            value={
-              String(
-                consultas.length
-              )
-            }
-
-            description="Consultas registradas"
-
-            icon="📅"
-
-            onPress={() =>
-              setTela(
-                'consultas'
-              )
-            }
-
-          />
-
-
-          {/* ACOMPANHAMENTOS */}
-
-          <Card
-
-            title="Acompanhamentos"
-
-            value="0"
-
-            description={
-              'Acompanhamentos ativos'
-            }
-
-            icon="❤️"
-
-            onPress={() =>
-              Alert.alert(
-                'Acompanhamentos',
-                'Visualização dos acompanhamentos.'
-              )
-            }
-
-          />
-
-
-          {/* AÇÕES RÁPIDAS */}
-
-          <SectionTitle
-
-            title="Ações rápidas"
-
-            subtitle={
-              'Registre novas informações'
-            }
-
-          />
-
-
-          {/* TRIAGEM */}
-
-          <ActionButton
-
-            title="Registrar atendimento"
-
-            icon="🩺"
-
-            onPress={() =>
-              setTela(
-                'novoAtendimento'
-              )
-            }
-
-          />
-
-
-          {/* CONSULTA */}
-
-          <ActionButton
-
-            title="Registrar consulta"
-
-            icon="📅"
-
-            onPress={() =>
-              setTela(
-                'novaConsulta'
-              )
-            }
-
-          />
-
-
-          {/* HISTÓRICO */}
-
-          <ActionButton
-
-            title="Ver histórico"
-
-            icon="📋"
-
-            onPress={() =>
-              setTela(
-                'historico'
-              )
-            }
-
-          />
-
-
-          {/* ÚLTIMOS REGISTROS */}
-
-          <SectionTitle
-
-            title="Últimos registros"
-
-            subtitle="Atividades recentes"
-
-          />
-
-
-          {/* ÚLTIMAS TRIAGENS */}
-
-          {atendimentos
-            .slice(0, 2)
-            .map(
-              atendimento => (
-
-                <TouchableOpacity
-
-                  key={
-                    `atendimento-${atendimento.id}`
-                  }
-
-                  style={
-                    styles.historyCard
-                  }
-
-                  onPress={() =>
-                    abrirDetalhesAtendimento(
-                      atendimento
-                    )
-                  }
-
-                >
-
-                  <View
-                    style={
-                      styles.historyIcon
-                    }
-                  >
-
-                    <Text>
-                      🩺
-                    </Text>
-
-                  </View>
-
-
-                  <View
-                    style={
-                      styles.historyContent
-                    }
-                  >
-
-                    <Text
-                      style={
-                        styles.historyTitle
-                      }
-                    >
-                      Triagem
-                    </Text>
-
-
-                    <Text
-                      style={
-                        styles.historyDescription
-                      }
-                    >
-                      {atendimento.paciente}
-                    </Text>
-
-
-                    <Text
-                      style={
-                        styles.historyDate
-                      }
-                    >
-                      {atendimento.data}
-                    </Text>
-
-                  </View>
-
-                </TouchableOpacity>
-
-              )
-            )}
-
-
-          {/* ÚLTIMAS CONSULTAS */}
-
-          {consultas
-            .slice(0, 2)
-            .map(
-              consulta => (
-
-                <TouchableOpacity
-
-                  key={
-                    `consulta-${consulta.id}`
-                  }
-
-                  style={
-                    styles.historyCard
-                  }
-
-                  onPress={() =>
-                    abrirDetalhesConsulta(
-                      consulta
-                    )
-                  }
-
-                >
-
-                  <View
-                    style={
-                      styles.historyIcon
-                    }
-                  >
-
-                    <Text>
-                      📅
-                    </Text>
-
-                  </View>
-
-
-                  <View
-                    style={
-                      styles.historyContent
-                    }
-                  >
-
-                    <Text
-                      style={
-                        styles.historyTitle
-                      }
-                    >
-                      Consulta
-                    </Text>
-
-
-                    <Text
-                      style={
-                        styles.historyDescription
-                      }
-                    >
-                      {consulta.paciente}
-                    </Text>
-
-
-                    <Text
-                      style={
-                        styles.historyDate
-                      }
-                    >
-                      {consulta.data}
-                    </Text>
-
-                  </View>
-
-                </TouchableOpacity>
-
-              )
-            )}
-
-        </ScrollView>
-
-      </SafeAreaView>
-    );
-  }
-
-
-  // ==========================================
-  // HISTÓRICO GERAL
-  // ==========================================
-
-  if (tela === 'historico') {
-
-    const registros = [
-
-      ...atendimentos.map(
-        item => ({
-          ...item,
-
-          registroTipo:
-            'Triagem',
-
-          registroId:
-            `atendimento-${item.id}`,
-        })
-      ),
-
-
-      ...consultas.map(
-        item => ({
-          ...item,
-
-          registroTipo:
-            'Consulta',
-
-          registroId:
-            `consulta-${item.id}`,
-        })
-      ),
-
-    ];
-
+  // ===================================================
+  // HISTÓRICO
+  // ===================================================
+
+  if (
+    tela ===
+    'atendimentos'
+  ) {
 
     return (
 
@@ -1069,11 +903,9 @@ ${consulta.observacoes || 'Nenhuma'}`
         >
 
           <TouchableOpacity
-
             onPress={() =>
               setTela('home')
             }
-
           >
 
             <Text
@@ -1095,7 +927,7 @@ ${consulta.observacoes || 'Nenhuma'}`
           <Text
             style={styles.listaSubtitulo}
           >
-            Consultas e triagens
+            Consultas e atendimentos de triagem
           </Text>
 
         </View>
@@ -1113,7 +945,26 @@ ${consulta.observacoes || 'Nenhuma'}`
 
         >
 
-          {registros.length === 0 ? (
+          {carregando ? (
+
+            <View
+              style={styles.carregando}
+            >
+
+              <ActivityIndicator
+                size="large"
+                color="#8B008B"
+              />
+
+              <Text
+                style={styles.carregandoTexto}
+              >
+                Carregando registros...
+              </Text>
+
+            </View>
+
+          ) : historico.length === 0 ? (
 
             <View
               style={styles.vazio}
@@ -1136,171 +987,40 @@ ${consulta.observacoes || 'Nenhuma'}`
               <Text
                 style={styles.vazioTexto}
               >
-                Cadastre uma triagem ou consulta
-                para começar seu histórico.
+                Cadastre uma consulta ou uma
+                triagem para começar seu histórico.
               </Text>
 
             </View>
 
           ) : (
 
-            registros.map(
+            historico.map(
               registro => (
 
-                <View
+                <AtendimentoCard
+
                   key={
-                    registro.registroId
+                    `${registro.origem}-${registro.id}`
                   }
-                >
 
-                  {/* TRIAGEM */}
+                  atendimento={
+                    registro
+                  }
 
-                  {registro.registroTipo ===
-                  'Triagem' ? (
+                  onPress={() =>
+                    abrirDetalhes(
+                      registro
+                    )
+                  }
 
-                    <AtendimentoCard
+                  onDelete={() =>
+                    excluirRegistro(
+                      registro
+                    )
+                  }
 
-                      atendimento={
-                        registro
-                      }
-
-                      onPress={() =>
-                        abrirDetalhesAtendimento(
-                          registro
-                        )
-                      }
-
-                      onDelete={() =>
-                        excluirAtendimento(
-                          registro.id
-                        )
-                      }
-
-                    />
-
-                  ) : (
-
-                    /* CONSULTA */
-
-                    <View
-                      style={
-                        styles.consultaCard
-                      }
-                    >
-
-                      <TouchableOpacity
-
-                        style={
-                          styles.consultaConteudo
-                        }
-
-                        onPress={() =>
-                          abrirDetalhesConsulta(
-                            registro
-                          )
-                        }
-
-                      >
-
-                        <View
-                          style={
-                            styles.historyIcon
-                          }
-                        >
-
-                          <Text>
-                            📅
-                          </Text>
-
-                        </View>
-
-
-                        <View
-                          style={
-                            styles.historyContent
-                          }
-                        >
-
-                          <Text
-                            style={
-                              styles.historyTitle
-                            }
-                          >
-                            Consulta
-                          </Text>
-
-
-                          <Text
-                            style={
-                              styles.historyDescription
-                            }
-                          >
-                            {registro.paciente}
-                          </Text>
-
-
-                          <Text
-                            style={
-                              styles.historyDate
-                            }
-                          >
-                            {registro.data}
-                            {' • '}
-                            {registro.horario}
-                          </Text>
-
-
-                          <Text
-                            style={
-                              styles.historyDescription
-                            }
-                          >
-                            {registro.especialidade}
-                          </Text>
-
-                        </View>
-
-
-                        <Text
-                          style={
-                            styles.seta
-                          }
-                        >
-                          ›
-                        </Text>
-
-                      </TouchableOpacity>
-
-
-                      <TouchableOpacity
-
-                        style={
-                          styles.excluir
-                        }
-
-                        onPress={() =>
-                          excluirConsulta(
-                            registro.id
-                          )
-                        }
-
-                      >
-
-                        <Text
-                          style={
-                            styles.excluirTexto
-                          }
-                        >
-                          Excluir
-                        </Text>
-
-                      </TouchableOpacity>
-
-                    </View>
-
-                  )}
-
-                </View>
+                />
 
               )
             )
@@ -1322,6 +1042,8 @@ ${consulta.observacoes || 'Nenhuma'}`
               )
             }
 
+            disabled={excluindo}
+
           >
 
             <Text
@@ -1329,7 +1051,7 @@ ${consulta.observacoes || 'Nenhuma'}`
                 styles.novoButtonTexto
               }
             >
-              ＋ Nova triagem
+              🩺 Nova triagem
             </Text>
 
           </TouchableOpacity>
@@ -1340,7 +1062,7 @@ ${consulta.observacoes || 'Nenhuma'}`
           <TouchableOpacity
 
             style={
-              styles.novoButtonSecundario
+              styles.consultaButton
             }
 
             onPress={() =>
@@ -1349,14 +1071,16 @@ ${consulta.observacoes || 'Nenhuma'}`
               )
             }
 
+            disabled={excluindo}
+
           >
 
             <Text
               style={
-                styles.novoButtonSecundarioTexto
+                styles.consultaButtonTexto
               }
             >
-              ＋ Nova consulta
+              📅 Nova consulta
             </Text>
 
           </TouchableOpacity>
@@ -1364,468 +1088,414 @@ ${consulta.observacoes || 'Nenhuma'}`
         </ScrollView>
 
       </SafeAreaView>
+
     );
   }
 
 
-  // ==========================================
-  // LISTA DE TRIAGENS
-  // ==========================================
+  // ===================================================
+  // HOME PRINCIPAL
+  // ===================================================
 
-  if (tela === 'atendimentos') {
+  return (
 
-    return (
+    <SafeAreaView
+      style={styles.container}
+    >
 
-      <SafeAreaView
-        style={styles.container}
+      <Header
+
+        userName="Usuário"
+
+        onNotificationPress={() =>
+          Alert.alert(
+            'Notificações',
+            'Você não possui novas notificações.'
+          )
+        }
+
+      />
+
+
+      <ScrollView
+
+        contentContainerStyle={
+          styles.content
+        }
+
+        showsVerticalScrollIndicator={
+          false
+        }
+
       >
 
+        {/* SAUDAÇÃO */}
+
         <View
-          style={styles.listaHeader}
+          style={styles.welcome}
         >
 
-          <TouchableOpacity
-
-            onPress={() =>
-              setTela('home')
-            }
-
-          >
-
-            <Text
-              style={styles.voltar}
-            >
-              ‹ Voltar
-            </Text>
-
-          </TouchableOpacity>
-
-
           <Text
-            style={styles.listaTitulo}
+            style={styles.welcomeTitle}
           >
-            Atendimentos
+            Olá! 👋
           </Text>
 
 
           <Text
-            style={styles.listaSubtitulo}
+            style={styles.welcomeText}
           >
-            Triagens registradas
+            Acompanhe suas consultas e
+            atendimentos de triagem de forma
+            simples e organizada.
           </Text>
 
         </View>
 
 
-        <ScrollView
+        {/* RESUMO */}
 
-          contentContainerStyle={
-            styles.listaContent
-          }
+        <SectionTitle
 
-          showsVerticalScrollIndicator={
-            false
-          }
+          title="Resumo"
 
-        >
+          subtitle="Visão geral dos seus registros"
 
-          {atendimentos.length === 0 ? (
-
-            <View
-              style={styles.vazio}
-            >
-
-              <Text
-                style={styles.vazioIcon}
-              >
-                🩺
-              </Text>
+        />
 
 
-              <Text
-                style={styles.vazioTitulo}
-              >
-                Nenhuma triagem
-              </Text>
+        <Card
 
+          title="Triagens"
 
-              <Text
-                style={styles.vazioTexto}
-              >
-                Cadastre um atendimento
-                para começar.
-              </Text>
-
-            </View>
-
-          ) : (
-
-            atendimentos.map(
-              atendimento => (
-
-                <AtendimentoCard
-
-                  key={
-                    atendimento.id
-                  }
-
-                  atendimento={
-                    atendimento
-                  }
-
-                  onPress={() =>
-                    abrirDetalhesAtendimento(
-                      atendimento
-                    )
-                  }
-
-                  onDelete={() =>
-                    excluirAtendimento(
-                      atendimento.id
-                    )
-                  }
-
-                />
-
-              )
+          value={
+            String(
+              atendimentos.length
             )
-
-          )}
-
-
-          <TouchableOpacity
-
-            style={
-              styles.novoButton
-            }
-
-            onPress={() =>
-              setTela(
-                'novoAtendimento'
-              )
-            }
-
-          >
-
-            <Text
-              style={
-                styles.novoButtonTexto
-              }
-            >
-              ＋ Nova triagem
-            </Text>
-
-          </TouchableOpacity>
-
-        </ScrollView>
-
-      </SafeAreaView>
-    );
-  }
-
-
-  // ==========================================
-  // LISTA DE CONSULTAS
-  // ==========================================
-
-  if (tela === 'consultas') {
-
-    return (
-
-      <SafeAreaView
-        style={styles.container}
-      >
-
-        <View
-          style={styles.listaHeader}
-        >
-
-          <TouchableOpacity
-
-            onPress={() =>
-              setTela('home')
-            }
-
-          >
-
-            <Text
-              style={styles.voltar}
-            >
-              ‹ Voltar
-            </Text>
-
-          </TouchableOpacity>
-
-
-          <Text
-            style={styles.listaTitulo}
-          >
-            Consultas
-          </Text>
-
-
-          <Text
-            style={styles.listaSubtitulo}
-          >
-            Consultas registradas
-          </Text>
-
-        </View>
-
-
-        <ScrollView
-
-          contentContainerStyle={
-            styles.listaContent
           }
 
-          showsVerticalScrollIndicator={
-            false
+          description="Atendimentos de triagem"
+
+          icon="🩺"
+
+          onPress={() =>
+            setTela(
+              'atendimentos'
+            )
           }
 
-        >
+        />
 
-          {consultas.length === 0 ? (
 
-            <View
-              style={styles.vazio}
-            >
+        <Card
 
-              <Text
-                style={styles.vazioIcon}
+          title="Consultas"
+
+          value={
+            String(
+              consultas.length
+            )
+          }
+
+          description="Consultas registradas"
+
+          icon="📅"
+
+          onPress={() =>
+            setTela(
+              'atendimentos'
+            )
+          }
+
+        />
+
+
+        <Card
+
+          title="Total"
+
+          value={
+            String(
+              historico.length
+            )
+          }
+
+          description="Registros no histórico"
+
+          icon="📋"
+
+          onPress={() =>
+            setTela(
+              'atendimentos'
+            )
+          }
+
+        />
+
+
+        {/* AÇÕES */}
+
+        <SectionTitle
+
+          title="Ações rápidas"
+
+          subtitle="Registre novas informações"
+
+        />
+
+
+        <ActionButton
+
+          title="Atendimento de triagem"
+
+          icon="🩺"
+
+          onPress={() =>
+            setTela(
+              'novoAtendimento'
+            )
+          }
+
+        />
+
+
+        <ActionButton
+
+          title="Nova consulta"
+
+          icon="📅"
+
+          onPress={() =>
+            setTela(
+              'novaConsulta'
+            )
+          }
+
+        />
+
+
+        <ActionButton
+
+          title="Ver histórico"
+
+          icon="📋"
+
+          onPress={() =>
+            setTela(
+              'atendimentos'
+            )
+          }
+
+        />
+
+
+        {/* ÚLTIMOS REGISTROS */}
+
+        <SectionTitle
+
+          title="Últimos registros"
+
+          subtitle="Atividades recentes"
+
+        />
+
+
+        {historico
+          .slice(0, 3)
+          .map(
+            registro => (
+
+              <TouchableOpacity
+
+                key={
+                  `home-${registro.origem}-${registro.id}`
+                }
+
+                style={
+                  styles.historyCard
+                }
+
+                onPress={() =>
+                  abrirDetalhes(
+                    registro
+                  )
+                }
+
               >
-                📅
-              </Text>
-
-
-              <Text
-                style={styles.vazioTitulo}
-              >
-                Nenhuma consulta
-              </Text>
-
-
-              <Text
-                style={styles.vazioTexto}
-              >
-                Cadastre uma consulta
-                para começar.
-              </Text>
-
-            </View>
-
-          ) : (
-
-            consultas.map(
-              consulta => (
 
                 <View
-
-                  key={
-                    consulta.id
-                  }
-
                   style={
-                    styles.consultaCard
+                    styles.historyIcon
                   }
-
                 >
 
-                  <TouchableOpacity
+                  <Text>
 
-                    style={
-                      styles.consultaConteudo
+                    {
+                      registro.origem ===
+                      'consulta'
+                        ? '📅'
+                        : '🩺'
                     }
 
-                    onPress={() =>
-                      abrirDetalhesConsulta(
-                        consulta
-                      )
-                    }
-
-                  >
-
-                    <View
-                      style={
-                        styles.historyIcon
-                      }
-                    >
-
-                      <Text>
-                        📅
-                      </Text>
-
-                    </View>
-
-
-                    <View
-                      style={
-                        styles.historyContent
-                      }
-                    >
-
-                      <Text
-                        style={
-                          styles.historyTitle
-                        }
-                      >
-                        Consulta
-                      </Text>
-
-
-                      <Text
-                        style={
-                          styles.historyDescription
-                        }
-                      >
-                        {consulta.paciente}
-                      </Text>
-
-
-                      <Text
-                        style={
-                          styles.historyDate
-                        }
-                      >
-                        {consulta.data}
-                        {' • '}
-                        {consulta.horario}
-                      </Text>
-
-
-                      <Text
-                        style={
-                          styles.historyDescription
-                        }
-                      >
-                        {consulta.especialidade}
-                      </Text>
-
-                    </View>
-
-
-                    <Text
-                      style={
-                        styles.seta
-                      }
-                    >
-                      ›
-                    </Text>
-
-                  </TouchableOpacity>
-
-
-                  <TouchableOpacity
-
-                    style={
-                      styles.excluir
-                    }
-
-                    onPress={() =>
-                      excluirConsulta(
-                        consulta.id
-                      )
-                    }
-
-                  >
-
-                    <Text
-                      style={
-                        styles.excluirTexto
-                      }
-                    >
-                      Excluir
-                    </Text>
-
-                  </TouchableOpacity>
+                  </Text>
 
                 </View>
 
-              )
-            )
 
+                <View
+                  style={
+                    styles.historyContent
+                  }
+                >
+
+                  <Text
+                    style={
+                      styles.historyTitle
+                    }
+                  >
+
+                    {
+                      registro.origem ===
+                      'consulta'
+                        ? 'Consulta'
+                        : 'Triagem'
+                    }
+
+                  </Text>
+
+
+                  <Text
+                    style={
+                      styles.historyDescription
+                    }
+                  >
+
+                    {registro.paciente}
+
+                  </Text>
+
+
+                  <Text
+                    style={
+                      styles.historyDate
+                    }
+                  >
+
+                    {registro.data}
+
+                    {' • '}
+
+                    {registro.horario}
+
+                  </Text>
+
+                </View>
+
+
+                <Text
+                  style={
+                    styles.historyArrow
+                  }
+                >
+                  ›
+                </Text>
+
+              </TouchableOpacity>
+
+            )
           )}
 
 
-          <TouchableOpacity
+        {historico.length === 0 && (
 
-            style={
-              styles.novoButtonSecundario
-            }
-
-            onPress={() =>
-              setTela(
-                'novaConsulta'
-              )
-            }
-
+          <View
+            style={styles.semHistorico}
           >
 
             <Text
               style={
-                styles.novoButtonSecundarioTexto
+                styles.semHistoricoTexto
               }
             >
-              ＋ Nova consulta
+              Nenhum registro recente.
             </Text>
 
-          </TouchableOpacity>
+          </View>
 
-        </ScrollView>
+        )}
 
-      </SafeAreaView>
-    );
-  }
+      </ScrollView>
 
+    </SafeAreaView>
 
-  return null;
+  );
 }
 
 
-// ==========================================
+// =====================================================
 // ESTILOS
-// ==========================================
+// =====================================================
 
 const styles = StyleSheet.create({
 
   container: {
+
     flex: 1,
+
     backgroundColor: '#F5F8FA',
+
   },
 
 
   content: {
+
     padding: 20,
+
     paddingBottom: 35,
+
   },
 
 
   welcome: {
+
     marginBottom: 25,
+
   },
 
 
   welcomeTitle: {
+
     fontSize: 27,
+
     fontWeight: 'bold',
+
     color: '#8B008B',
+
     marginBottom: 5,
+
   },
 
 
   welcomeText: {
+
     fontSize: 14,
+
     lineHeight: 21,
+
     color: '#161515',
-    maxWidth: 330,
+
+    maxWidth: 500,
+
   },
 
 
-  // =====================================
+  // ==========================================
   // HISTÓRICO
-  // =====================================
+  // ==========================================
 
   historyCard: {
+
     backgroundColor: '#FFFFFF',
 
     borderRadius: 15,
@@ -1841,8 +1511,11 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
 
     shadowOffset: {
+
       width: 0,
+
       height: 1,
+
     },
 
     shadowOpacity: 0.05,
@@ -1850,10 +1523,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
 
     elevation: 2,
+
   },
 
 
   historyIcon: {
+
     width: 45,
 
     height: 45,
@@ -1867,46 +1542,85 @@ const styles = StyleSheet.create({
     alignItems: 'center',
 
     marginRight: 13,
+
   },
 
 
   historyContent: {
+
     flex: 1,
+
   },
 
 
   historyTitle: {
+
     fontSize: 15,
 
     fontWeight: 'bold',
 
     color: '#8B008B',
+
   },
 
 
   historyDescription: {
+
     fontSize: 12,
 
     color: '#161515',
 
     marginTop: 3,
+
   },
 
 
   historyDate: {
+
     fontSize: 11,
 
     color: '#161515',
 
     marginTop: 5,
+
   },
 
 
-  // =====================================
-  // LISTA
-  // =====================================
+  historyArrow: {
+
+    fontSize: 28,
+
+    color: '#8B008B',
+
+    marginLeft: 8,
+
+  },
+
+
+  semHistorico: {
+
+    padding: 20,
+
+    alignItems: 'center',
+
+  },
+
+
+  semHistoricoTexto: {
+
+    color: '#777',
+
+    fontSize: 13,
+
+  },
+
+
+  // ==========================================
+  // CABEÇALHO
+  // ==========================================
 
   listaHeader: {
+
     backgroundColor: '#FFFFFF',
 
     padding: 20,
@@ -1914,10 +1628,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
 
     borderBottomColor: '#E8EDF1',
+
   },
 
 
   voltar: {
+
     color: '#8B008B',
 
     fontSize: 16,
@@ -1925,39 +1641,47 @@ const styles = StyleSheet.create({
     fontWeight: '600',
 
     marginBottom: 15,
+
   },
 
 
   listaTitulo: {
+
     fontSize: 25,
 
     fontWeight: 'bold',
 
     color: '#8B008B',
+
   },
 
 
   listaSubtitulo: {
+
     fontSize: 13,
 
     color: '#161515',
 
     marginTop: 4,
+
   },
 
 
   listaContent: {
+
     padding: 20,
 
     paddingBottom: 40,
+
   },
 
 
-  // =====================================
-  // VAZIO
-  // =====================================
+  // ==========================================
+  // CARREGANDO
+  // ==========================================
 
-  vazio: {
+  carregando: {
+
     backgroundColor: '#FFFFFF',
 
     borderRadius: 16,
@@ -1967,17 +1691,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
 
     marginBottom: 20,
+
+  },
+
+
+  carregandoTexto: {
+
+    marginTop: 12,
+
+    fontSize: 13,
+
+    color: '#555',
+
+  },
+
+
+  // ==========================================
+  // VAZIO
+  // ==========================================
+
+  vazio: {
+
+    backgroundColor: '#FFFFFF',
+
+    borderRadius: 16,
+
+    padding: 35,
+
+    alignItems: 'center',
+
+    marginBottom: 20,
+
   },
 
 
   vazioIcon: {
+
     fontSize: 40,
 
     marginBottom: 10,
+
   },
 
 
   vazioTitulo: {
+
     fontSize: 18,
 
     fontWeight: 'bold',
@@ -1985,23 +1743,27 @@ const styles = StyleSheet.create({
     color: '#8B008B',
 
     marginBottom: 5,
+
   },
 
 
   vazioTexto: {
+
     fontSize: 13,
 
     color: '#161515',
 
     textAlign: 'center',
+
   },
 
 
-  // =====================================
-  // BOTÃO PRINCIPAL
-  // =====================================
+  // ==========================================
+  // BOTÃO TRIAGEM
+  // ==========================================
 
   novoButton: {
+
     backgroundColor: '#8B008B',
 
     borderRadius: 14,
@@ -2014,24 +1776,28 @@ const styles = StyleSheet.create({
 
     marginTop: 5,
 
-    marginBottom: 12,
+    marginBottom: 10,
+
   },
 
 
   novoButtonTexto: {
+
     color: '#FFFFFF',
 
     fontSize: 15,
 
     fontWeight: 'bold',
+
   },
 
 
-  // =====================================
-  // BOTÃO SECUNDÁRIO
-  // =====================================
+  // ==========================================
+  // BOTÃO CONSULTA
+  // ==========================================
 
-  novoButtonSecundario: {
+  consultaButton: {
+
     backgroundColor: '#FFFFFF',
 
     borderWidth: 1,
@@ -2046,86 +1812,19 @@ const styles = StyleSheet.create({
 
     justifyContent: 'center',
 
-    marginBottom: 12,
+    marginBottom: 10,
+
   },
 
 
-  novoButtonSecundarioTexto: {
+  consultaButtonTexto: {
+
     color: '#8B008B',
 
     fontSize: 15,
 
     fontWeight: 'bold',
-  },
 
-
-  // =====================================
-  // CONSULTA
-  // =====================================
-
-  consultaCard: {
-    backgroundColor: '#FFFFFF',
-
-    borderRadius: 16,
-
-    marginBottom: 12,
-
-    shadowColor: '#000',
-
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-
-    shadowOpacity: 0.05,
-
-    shadowRadius: 4,
-
-    elevation: 2,
-
-    overflow: 'hidden',
-  },
-
-
-  consultaConteudo: {
-    flexDirection: 'row',
-
-    alignItems: 'center',
-
-    padding: 15,
-  },
-
-
-  seta: {
-    fontSize: 30,
-
-    color: '#8B008B',
-
-    marginLeft: 8,
-  },
-
-
-  // =====================================
-  // EXCLUIR
-  // =====================================
-
-  excluir: {
-    borderTopWidth: 1,
-
-    borderTopColor: '#EEF1F3',
-
-    alignItems: 'center',
-
-    paddingVertical: 8,
-  },
-
-
-  excluirTexto: {
-    color: '#B00020',
-
-    fontSize: 12,
-
-    fontWeight: '600',
   },
 
 });

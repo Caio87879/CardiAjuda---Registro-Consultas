@@ -15,10 +15,6 @@ export default function AtendimentoForm({
   onCancel,
 }) {
 
-  // =====================================
-  // CAMPOS DO FORMULÁRIO
-  // =====================================
-
   const [paciente, setPaciente] = useState('');
   const [data, setData] = useState('');
   const [horario, setHorario] = useState('');
@@ -28,34 +24,83 @@ export default function AtendimentoForm({
   const [observacoes, setObservacoes] = useState('');
 
 
-  // =====================================
-  // SALVAR TRIAGEM
-  // =====================================
+  // =========================
+  // FORMATAÇÃO DA DATA
+  // =========================
+
+  function alterarData(texto) {
+
+    let valor = texto.replace(/\D/g, '');
+
+    if (valor.length > 8) {
+      valor = valor.substring(0, 8);
+    }
+
+    if (valor.length >= 5) {
+
+      valor =
+        valor.substring(0, 2) +
+        '/' +
+        valor.substring(2, 4) +
+        '/' +
+        valor.substring(4);
+
+    } else if (valor.length >= 3) {
+
+      valor =
+        valor.substring(0, 2) +
+        '/' +
+        valor.substring(2);
+
+    }
+
+    setData(valor);
+  }
+
+
+  // =========================
+  // FORMATAÇÃO DO HORÁRIO
+  // =========================
+
+  function alterarHorario(texto) {
+
+    let valor = texto.replace(/\D/g, '');
+
+    if (valor.length > 4) {
+      valor = valor.substring(0, 4);
+    }
+
+    if (valor.length >= 3) {
+
+      valor =
+        valor.substring(0, 2) +
+        ':' +
+        valor.substring(2);
+
+    }
+
+    setHorario(valor);
+  }
+
+
+  // =========================
+  // SALVAR
+  // =========================
 
   function salvar() {
 
-    console.log(
-      '🩺 Botão salvar triagem clicado'
-    );
+    console.log('Botão salvar triagem clicado');
 
+    console.log('Dados:', {
+      paciente,
+      data,
+      horario,
+      profissional,
+      queixaPrincipal,
+      classificacao,
+      observacoes,
+    });
 
-    console.log(
-      'Campos:',
-      {
-        paciente,
-        data,
-        horario,
-        profissional,
-        queixaPrincipal,
-        classificacao,
-        observacoes,
-      }
-    );
-
-
-    // ==============================
-    // VALIDAÇÃO
-    // ==============================
 
     if (
       !paciente ||
@@ -74,11 +119,29 @@ export default function AtendimentoForm({
     }
 
 
-    // ==============================
-    // OBJETO DA TRIAGEM
-    // ==============================
+    if (data.length !== 10) {
+
+      alert(
+        'Digite a data no formato DD/MM/AAAA.'
+      );
+
+      return;
+    }
+
+
+    if (horario.length !== 5) {
+
+      alert(
+        'Digite o horário no formato HH:MM.'
+      );
+
+      return;
+    }
+
 
     const novoAtendimento = {
+
+      tipo: 'Triagem',
 
       paciente,
 
@@ -88,8 +151,7 @@ export default function AtendimentoForm({
 
       profissional,
 
-      queixa_principal:
-        queixaPrincipal,
+      queixa_principal: queixaPrincipal,
 
       classificacao,
 
@@ -99,344 +161,215 @@ export default function AtendimentoForm({
 
 
     console.log(
-      '📤 Enviando triagem:',
+      'Enviando triagem:',
       novoAtendimento
     );
 
 
-    // Envia os dados para o Home
-    onSave(
-      novoAtendimento
-    );
+    onSave(novoAtendimento);
   }
 
 
   return (
 
     <ScrollView
-
       style={styles.container}
-
-      contentContainerStyle={
-        styles.content
-      }
-
-      showsVerticalScrollIndicator={
-        false
-      }
-
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
     >
 
-      {/* =====================================
-          VOLTAR
-      ===================================== */}
+      {/* VOLTAR */}
 
       <TouchableOpacity
         onPress={onCancel}
       >
 
-        <Text
-          style={styles.voltar}
-        >
+        <Text style={styles.voltar}>
           ‹ Voltar
         </Text>
 
       </TouchableOpacity>
 
 
-      {/* =====================================
-          TÍTULO
-      ===================================== */}
+      {/* TÍTULO */}
 
-      <Text
-        style={styles.titulo}
-      >
-        Novo atendimento
+      <Text style={styles.titulo}>
+        Atendimento de triagem
       </Text>
 
 
-      <Text
-        style={styles.subtitulo}
-      >
-        Registre a triagem inicial do paciente.
+      <Text style={styles.subtitulo}>
+        Registre os dados do atendimento de triagem.
       </Text>
 
 
-      {/* =====================================
-          TIPO
-      ===================================== */}
+      {/* TIPO */}
 
-      <Text
-        style={styles.label}
-      >
-        Tipo de atendimento
+      <Text style={styles.label}>
+        Tipo
       </Text>
 
 
-      <View
-        style={styles.tipoContainer}
-      >
+      <View style={styles.tipoContainer}>
 
-        <Text
-          style={styles.tipoIcon}
-        >
+        <Text style={styles.tipoIcon}>
           🩺
         </Text>
 
-
-        <Text
-          style={styles.tipoTexto}
-        >
+        <Text style={styles.tipoTexto}>
           Triagem
         </Text>
 
       </View>
 
 
-      {/* =====================================
-          PACIENTE
-      ===================================== */}
+      {/* PACIENTE */}
 
-      <Text
-        style={styles.label}
-      >
-        Nome do paciente *
+      <Text style={styles.label}>
+        Paciente *
       </Text>
 
 
       <TextInput
-
         style={styles.input}
-
-        placeholder="Nome completo do paciente"
-
+        placeholder="Nome do paciente"
         placeholderTextColor="#999"
-
         value={paciente}
-
-        onChangeText={
-          setPaciente
-        }
-
+        onChangeText={setPaciente}
       />
 
 
-      {/* =====================================
-          DATA
-      ===================================== */}
+      {/* DATA */}
 
-      <Text
-        style={styles.label}
-      >
+      <Text style={styles.label}>
         Data *
       </Text>
 
 
       <TextInput
-
         style={styles.input}
-
         placeholder="Ex: 20/08/2026"
-
         placeholderTextColor="#999"
-
         value={data}
-
-        onChangeText={
-          setData
-        }
-
+        onChangeText={alterarData}
+        keyboardType="numeric"
+        maxLength={10}
       />
 
 
-      {/* =====================================
-          HORÁRIO
-      ===================================== */}
+      {/* HORÁRIO */}
 
-      <Text
-        style={styles.label}
-      >
+      <Text style={styles.label}>
         Horário *
       </Text>
 
 
       <TextInput
-
         style={styles.input}
-
         placeholder="Ex: 14:30"
-
         placeholderTextColor="#999"
-
         value={horario}
-
-        onChangeText={
-          setHorario
-        }
-
+        onChangeText={alterarHorario}
+        keyboardType="numeric"
+        maxLength={5}
       />
 
 
-      {/* =====================================
-          PROFISSIONAL
-      ===================================== */}
+      {/* PROFISSIONAL */}
 
-      <Text
-        style={styles.label}
-      >
-        Profissional responsável *
+      <Text style={styles.label}>
+        Profissional *
       </Text>
 
 
       <TextInput
-
         style={styles.input}
-
         placeholder="Nome do profissional"
-
         placeholderTextColor="#999"
-
         value={profissional}
-
-        onChangeText={
-          setProfissional
-        }
-
+        onChangeText={setProfissional}
       />
 
 
-      {/* =====================================
-          QUEIXA PRINCIPAL
-      ===================================== */}
+      {/* QUEIXA PRINCIPAL */}
 
-      <Text
-        style={styles.label}
-      >
+      <Text style={styles.label}>
         Queixa principal *
       </Text>
 
 
       <TextInput
-
         style={[
           styles.input,
-          styles.textoGrande,
+          styles.textArea,
         ]}
-
-        placeholder="Descreva a queixa principal do paciente"
-
+        placeholder="Descreva a queixa principal"
         placeholderTextColor="#999"
-
         value={queixaPrincipal}
-
-        onChangeText={
-          setQueixaPrincipal
-        }
-
+        onChangeText={setQueixaPrincipal}
         multiline
-
       />
 
 
-      {/* =====================================
-          CLASSIFICAÇÃO
-      ===================================== */}
+      {/* CLASSIFICAÇÃO */}
 
-      <Text
-        style={styles.label}
-      >
-        Classificação da triagem *
+      <Text style={styles.label}>
+        Classificação *
       </Text>
 
 
       <TextInput
-
         style={styles.input}
-
-        placeholder="Ex: Baixa prioridade"
-
+        placeholder="Classificação da triagem"
         placeholderTextColor="#999"
-
         value={classificacao}
-
-        onChangeText={
-          setClassificacao
-        }
-
+        onChangeText={setClassificacao}
       />
 
 
-      {/* =====================================
-          OBSERVAÇÕES
-      ===================================== */}
+      {/* OBSERVAÇÕES */}
 
-      <Text
-        style={styles.label}
-      >
+      <Text style={styles.label}>
         Observações
       </Text>
 
 
       <TextInput
-
         style={[
           styles.input,
-          styles.observacoes,
+          styles.textArea,
         ]}
-
-        placeholder="Observações adicionais..."
-
+        placeholder="Observações do atendimento..."
         placeholderTextColor="#999"
-
         value={observacoes}
-
-        onChangeText={
-          setObservacoes
-        }
-
+        onChangeText={setObservacoes}
         multiline
-
       />
 
 
-      {/* =====================================
-          SALVAR
-      ===================================== */}
+      {/* SALVAR */}
 
       <TouchableOpacity
-
         style={styles.salvar}
-
         onPress={salvar}
-
         activeOpacity={0.8}
-
       >
 
-        <Text
-          style={styles.salvarTexto}
-        >
-          🩺 Registrar triagem
+        <Text style={styles.salvarTexto}>
+          Salvar triagem
         </Text>
 
       </TouchableOpacity>
 
 
-      {/* =====================================
-          CANCELAR
-      ===================================== */}
+      {/* CANCELAR */}
 
       <TouchableOpacity
-
         style={styles.cancelar}
-
         onPress={onCancel}
-
       >
 
-        <Text
-          style={styles.cancelarTexto}
-        >
+        <Text style={styles.cancelarTexto}>
           Cancelar
         </Text>
 
@@ -447,10 +380,6 @@ export default function AtendimentoForm({
 }
 
 
-// =====================================
-// ESTILOS
-// =====================================
-
 const styles = StyleSheet.create({
 
   container: {
@@ -458,12 +387,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F8FA',
   },
 
-
   content: {
     padding: 20,
     paddingBottom: 40,
   },
-
 
   voltar: {
     fontSize: 17,
@@ -472,7 +399,6 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
 
-
   titulo: {
     fontSize: 27,
     fontWeight: 'bold',
@@ -480,13 +406,11 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
 
-
   subtitulo: {
     fontSize: 14,
     color: '#161515',
     marginBottom: 28,
   },
-
 
   label: {
     fontSize: 14,
@@ -495,137 +419,71 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-
-  // =====================================
-  // TIPO
-  // =====================================
-
   tipoContainer: {
     height: 54,
-
     backgroundColor: '#E8F4FF',
-
     borderWidth: 1,
-
     borderColor: '#DCE3E8',
-
     borderRadius: 14,
-
     paddingHorizontal: 15,
-
     flexDirection: 'row',
-
     alignItems: 'center',
-
     marginBottom: 18,
   },
-
 
   tipoIcon: {
     fontSize: 22,
-
     marginRight: 10,
   },
 
-
   tipoTexto: {
     fontSize: 15,
-
     fontWeight: '600',
-
     color: '#8B008B',
   },
-
-
-  // =====================================
-  // INPUT
-  // =====================================
 
   input: {
     height: 54,
-
     backgroundColor: '#FFFFFF',
-
     borderWidth: 1,
-
     borderColor: '#DCE3E8',
-
     borderRadius: 14,
-
     paddingHorizontal: 15,
-
     fontSize: 15,
-
     color: '#222222',
-
     marginBottom: 18,
   },
 
-
-  textoGrande: {
-    height: 90,
-
+  textArea: {
+    height: 100,
     paddingTop: 15,
-
     textAlignVertical: 'top',
   },
-
-
-  observacoes: {
-    height: 110,
-
-    paddingTop: 15,
-
-    textAlignVertical: 'top',
-  },
-
-
-  // =====================================
-  // SALVAR
-  // =====================================
 
   salvar: {
     height: 54,
-
     backgroundColor: '#8B008B',
-
     borderRadius: 14,
-
     alignItems: 'center',
-
     justifyContent: 'center',
-
     marginTop: 8,
   },
 
-
   salvarTexto: {
     color: '#FFFFFF',
-
     fontSize: 15,
-
     fontWeight: 'bold',
   },
 
-
-  // =====================================
-  // CANCELAR
-  // =====================================
-
   cancelar: {
     height: 50,
-
     alignItems: 'center',
-
     justifyContent: 'center',
   },
 
-
   cancelarTexto: {
     color: '#8B008B',
-
     fontSize: 15,
-
     fontWeight: '600',
   },
 
